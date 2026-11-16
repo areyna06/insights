@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="description" content="See where your browsing time goes. Your data stays on your phone.">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Insights">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#08080f">
+<title>Browsing Insights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #07070d;
+    --glass: linear-gradient(180deg, rgba(38,40,52,.72), rgba(18,19,26,.82));
+    --glass-flat: rgba(255,255,255,.045);
+    --edge: rgba(255,255,255,.09);
+    --edge-hi: rgba(255,255,255,.16);
+    --ink: #f2f3f7; --ink-2: #a9abb8; --ink-3: #6d6f7d;
+    --accent: #3d8bff; --accent-2: #5fd0ff;
+    --glow: 0 0 22px rgba(80,170,255,.55), 0 0 2px rgba(150,210,255,.9);
+    --social: #3987e5; --magic: #d55181; --video: #199e70; --games: #c98500; --other: #6a6b76;
+    --ease: cubic-bezier(.2,.8,.2,1);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+  body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--bg);
+    font: 15px/1.45 "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+    letter-spacing: -0.011em; font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
+  /* Glow painted once on its own layer, so scrolling never repaints it. */
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; transform: translateZ(0);
+    background:
+      radial-gradient(900px 500px at 50% -120px, rgba(76,60,190,.32), transparent 70%),
+      radial-gradient(600px 400px at 100% 30%, rgba(40,90,200,.12), transparent 70%); }
+  main { max-width: 460px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 14px calc(40px + env(safe-area-inset-bottom)); }
+  button { font: inherit; color: inherit; }
+
+  .glass { background: var(--glass); border: 1px solid var(--edge); border-radius: 30px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06); }
+  .card { padding: 22px; margin-top: 14px; }
+  .label { font-size: 13px; font-weight: 600; color: var(--ink-2); letter-spacing: .02em; }
+
+  /* hero panel */
+  .hero { padding: 22px 22px 18px; }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; }
+  .hero-top .title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; user-select: none; white-space: nowrap; }
+  .hero-top .title svg { width: 18px; height: 18px; color: var(--ink-2); }
+  .hero-top .title .range-name { color: var(--ink-3); font-weight: 500; }
+  .round { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--edge); background: var(--glass-flat);
+    display: grid; place-items: center; cursor: pointer; color: var(--ink-2); transition: all .35s var(--ease); flex: none; }
+  .round svg { width: 20px; height: 20px; }
+  .round.lit { background: radial-gradient(circle at 50% 35%, #8fdcff, var(--accent-2) 45%, #2aa7f0); color: #062033; border-color: transparent; box-shadow: var(--glow); }
+  .round.spin svg { animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .round:active { transform: scale(.92); }
+
+  .ring-wrap { position: relative; width: 236px; height: 236px; margin: 14px auto 6px; }
+  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+  .ring-wrap circle.seg { fill: none; stroke-width: 16; stroke-linecap: round;
+    transition: stroke-dasharray .9s var(--ease), stroke-dashoffset .9s var(--ease), opacity .4s var(--ease); }
+  .ring-wrap circle.track { fill: none; stroke: rgba(255,255,255,.05); stroke-width: 16; }
+  .ring-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
+  .ring-center > div { max-width: 168px; }
+  .big { font-size: 56px; font-weight: 600; letter-spacing: -.045em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* Units sit small and raised next to the number, like "24°C". */
+  .big small { font-size: .36em; font-weight: 500; color: var(--ink-2); letter-spacing: 0; vertical-align: top;
+    position: relative; top: .14em; margin: 0 .22em 0 .06em; }
+  .big small:last-child { margin-right: 0; }
+  .ring-sub { font-size: 13px; color: var(--ink-2); margin-top: 8px; transition: color .3s; }
+  .ring-sub b { color: var(--ink); font-weight: 600; }
+
+  /* range slider */
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+  .slider { position: relative; flex: 1; height: 56px; border-radius: 99px; background: rgba(255,255,255,.06);
+    border: 1px solid var(--edge); touch-action: none; cursor: pointer; }
+  .slider .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px;
+    background: linear-gradient(90deg, #2f6ff0, var(--accent) 40%, var(--accent-2)); box-shadow: 0 0 24px rgba(70,150,255,.35);
+    transition: width .35s var(--ease); }
+  .slider .knob { position: absolute; left: 0; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+    background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.45); will-change: transform;
+    transform: translateX(var(--x, 28px)); transition: transform .35s var(--ease); }
+  .slider .fill { will-change: width; }
+  .slider.dragging .fill, .slider.dragging .knob { transition: none; }
+  .slider.dragging .knob { transform: translateX(var(--x, 28px)) scale(1.06); }
+  .slider-labels { display: flex; justify-content: space-between; padding: 6px 70px 0; font-size: 12px; color: var(--ink-3); }
+  .slider-labels span { cursor: pointer; transition: color .3s; }
+  .slider-labels span.on { color: var(--ink); }
+
+  /* tiles */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .tile { position: relative; text-align: left; border-radius: 22px; padding: 14px 12px 12px; min-height: 104px;
+    background: var(--glass); border: 1px solid var(--edge); cursor: pointer; overflow: hidden;
+    transition: transform .25s var(--ease), border-color .3s, opacity .35s, box-shadow .35s; }
+  .tile:active { transform: scale(.96); }
+  .tile svg.ic { width: 22px; height: 22px; color: var(--c, var(--ink-2)); }
+  .tile .t-name { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .tile .t-val { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .tile.on { border-color: color-mix(in srgb, var(--c) 70%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent), 0 0 26px color-mix(in srgb, var(--c) 28%, transparent); }
+  .tile.on::before { content: ""; position: absolute; inset: 0; background: radial-gradient(120px 80px at 20% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent); }
+  .tiles.focused .tile:not(.on):not(.switch-tile) { opacity: .45; }
+  .switch { position: absolute; right: 10px; top: 12px; width: 44px; height: 26px; border-radius: 99px; background: rgba(255,255,255,.12);
+    transition: background .3s var(--ease); }
+  .switch::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #d8d9e0;
+    transition: transform .3s var(--ease), background .3s; }
+  .switch-tile.on .switch { background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 14px rgba(80,170,255,.5); }
+  .switch-tile.on .switch::after { transform: translateX(18px); background: #fff; }
+
+  /* charts */
+  .chart { position: relative; margin-top: 12px; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  /* Entrance animations only play when new data arrives (class "fresh"), never on taps or auto-refresh. */
+  .chart rect.b, .chart path.b { transform-box: fill-box; transform-origin: bottom; }
+  .chart.fresh rect.b, .chart.fresh path.b { animation: grow .55s var(--ease) both; }
+  @keyframes grow { from { transform: scaleY(0); } }
+  .tip { position: absolute; pointer-events: none; background: rgba(240,242,250,.96); color: #0b0c12; border-radius: 12px;
+    padding: 7px 11px; font-size: 13px; display: none; z-index: 5; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .note { font-size: 14px; color: var(--ink-2); margin-top: 4px; }
+  .note b { color: var(--ink); }
+
+  /* lists */
+  .list { list-style: none; margin: 10px 0 0; padding: 0; }
+  .list li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,.06); }
+  .list.fresh li { animation: rise .4s var(--ease) both; }
+  .list li:first-child { border-top: 0; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .av { width: 38px; height: 38px; border-radius: 13px; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 15px;
+    color: #fff; text-transform: uppercase; background: color-mix(in srgb, var(--c) 85%, #000); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+  .grow { flex: 1; min-width: 0; }
+  .grow .n { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grow .m { font-size: 12px; color: var(--ink-3); }
+  .mini { height: 4px; border-radius: 99px; background: rgba(255,255,255,.06); margin-top: 6px; overflow: hidden; }
+  .mini i { display: block; height: 100%; border-radius: 99px; background: var(--c); transition: width .7s var(--ease); }
+  .val { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; }
+  .more { width: 100%; margin-top: 10px; padding: 12px; border-radius: 16px; border: 1px solid var(--edge); background: var(--glass-flat);
+    color: var(--ink-2); font-size: 14px; cursor: pointer; }
+  .pill { border: 1px solid var(--edge-hi); background: transparent; border-radius: 99px; padding: 5px 12px; font-size: 12px; color: var(--ink-2); cursor: pointer; flex: none; }
+  .pill.on { background: #fff; color: #0b0c12; border-color: #fff; }
+  li.off { opacity: .4; }
+
+  .seg-bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; gap: 3px; margin-top: 14px; }
+  .seg-bar i { height: 100%; border-radius: 99px; transition: flex-grow .7s var(--ease); }
+
+  .edit-note { margin-top: 14px; padding: 14px 16px; border-radius: 20px; border: 1px dashed var(--edge-hi); font-size: 13.5px; color: var(--ink-2); }
+  .edit-note b { color: var(--ink); }
+  body.presenting .edit-only { display: none !important; }
+  .link { border: 0; background: none; color: var(--accent-2); cursor: pointer; padding: 0; font-size: 13.5px; }
+  details > summary { cursor: pointer; list-style: none; color: var(--ink-2); font-size: 14px; display: flex; justify-content: space-between; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "›"; transition: transform .3s; font-size: 18px; line-height: 1; }
+  details[open] > summary::after { transform: rotate(90deg); }
+  .phone-url { font-size: 17px; font-weight: 600; word-break: break-all; margin-top: 4px; color: var(--accent-2); }
+
+  /* login */
+  #login { padding: 30px 24px; margin-top: 18vh; text-align: center; }
+  #login h1 { font-weight: 600; font-size: 30px; margin: 0; letter-spacing: -.03em; }
+  #login input { width: 100%; font: inherit; font-size: 26px; text-align: center; letter-spacing: 10px; margin: 20px 0 10px; padding: 14px;
+    border-radius: 18px; border: 1px solid var(--edge); background: rgba(255,255,255,.05); color: var(--ink); outline: none; }
+  #login input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(61,139,255,.2); }
+  #login button { width: 100%; padding: 15px; border: 0; border-radius: 18px; font-weight: 600; cursor: pointer; color: #062033;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 24px rgba(70,150,255,.35); }
+  .err { color: #ff7b7b; font-size: 14px; min-height: 20px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  /* ---------- web version: welcome + loading ---------- */
+  :root { --shop: #9085e9; }
+  .welcome { padding: 26px 22px; margin-top: 8vh; }
+  .welcome h1 { font-size: 30px; font-weight: 700; letter-spacing: -.035em; line-height: 1.1; margin: 6px 0 8px; }
+  .welcome .lead { color: var(--ink-2); font-size: 15px; }
+  .steps2 { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 12px; }
+  .steps2 li { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 20px; background: var(--glass-flat); border: 1px solid var(--edge); }
+  .steps2 .num { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 14px;
+    background: rgba(255,255,255,.08); }
+  .steps2 li.active .num { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #062033; box-shadow: var(--glow); }
+  .steps2 .s-title { font-weight: 600; }
+  .steps2 .s-text { color: var(--ink-2); font-size: 13.5px; margin-top: 2px; }
+  .cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 12px; padding: 14px; border-radius: 16px;
+    border: 0; font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: none; transition: transform .15s; }
+  .cta:active { transform: scale(.97); }
+  .cta.primary { color: #062033; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 24px rgba(70,150,255,.35); }
+  .cta.ghost { color: var(--ink); background: rgba(255,255,255,.07); border: 1px solid var(--edge); }
+  .cta svg { width: 18px; height: 18px; }
+  .privacy { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; font-size: 13px; color: var(--ink-2); }
+  .privacy svg { width: 18px; height: 18px; flex: none; color: var(--good, #34c46a); margin-top: 1px; }
+  .loading { text-align: center; padding: 40px 22px; margin-top: 20vh; }
+  .bar-track { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; margin: 18px 0 10px; }
+  .bar-track i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .25s; }
+  .fine { font-size: 12px; color: var(--ink-3); margin-top: 8px; }
+  .fine a { color: var(--ink-2); }
+  .tile.action .ic { color: var(--accent-2); }
+  .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .danger { color: #ff8a8a !important; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+</head>
+<body>
+<main>
+  <input type="file" id="fileInput" class="hidden-input" accept=".zip,.json,application/zip,application/json">
+
+  <!-- 1. Welcome: shown until data is loaded -->
+  <section id="welcome" class="glass welcome" hidden>
+    <div class="label">Browsing Insights</div>
+    <h1>See where your browsing time goes</h1>
+    <div class="lead">Two quick steps. Your data stays on this phone. It's never uploaded anywhere.</div>
+    <ol class="steps2">
+      <li class="active" id="step1">
+        <span class="num">1</span>
+        <div style="flex:1">
+          <div class="s-title">Ask Google for your Chrome history</div>
+          <div class="s-text">Chrome is already selected. Scroll down, tap <b>Next step</b>, then <b>Create export</b>. Google emails you when it's ready (usually minutes, sometimes a few hours).</div>
+          <a class="cta primary" id="takeoutBtn" href="https://takeout.google.com/settings/takeout/custom/chrome" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>
+            Get my data from Google</a>
+        </div>
+      </li>
+      <li id="step2">
+        <span class="num">2</span>
+        <div style="flex:1">
+          <div class="s-title">Open the file here</div>
+          <div class="s-text">When Google's email arrives, download the file, come back to this page and tap below. Pick the <b>.zip</b> you downloaded (on iPhone it's in <b>Files → Downloads</b>).</div>
+          <button class="cta ghost" id="loadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            Load my data</button>
+        </div>
+      </li>
+    </ol>
+    <div class="privacy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Everything is worked out inside your phone's browser. Nothing is sent to anyone, including whoever shared this link. You can delete it from this phone any time.</span>
+    </div>
+    <div class="err" id="welcomeErr" style="margin-top:12px"></div>
+  </section>
+
+  <!-- 2. Loading -->
+  <section id="loading" class="glass loading" hidden>
+    <div class="label">Reading your history</div>
+    <div class="bar-track"><i id="loadBar"></i></div>
+    <div class="note" id="loadText">Opening the file…</div>
+  </section>
+
+  <!-- 3. Dashboard -->
+  <section id="app" hidden>
+    <div class="glass hero">
+      <div class="hero-top">
+        <div class="title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+          <span>Insights</span><span class="range-name" id="rangeName"></span>
+        </div>
+        <button class="round lit" id="updateBtn" aria-label="Load newer data" title="Load newer data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        </button>
+      </div>
+
+      <div class="ring-wrap">
+        <svg viewBox="0 0 200 200" id="ring"><circle class="track" cx="100" cy="100" r="82"/></svg>
+        <div class="ring-center"><div>
+          <div class="big" id="big">–</div>
+          <div class="ring-sub" id="ringSub"></div>
+        </div></div>
+      </div>
+
+      <div class="slider-row">
+        <button class="round" id="minus" aria-label="Shorter range"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 12h12"/></svg></button>
+        <div class="slider" id="slider" role="slider" aria-label="Time range" tabindex="0"><div class="fill" id="fill"></div><div class="knob" id="knob"></div></div>
+        <button class="round" id="plus" aria-label="Longer range"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></button>
+      </div>
+      <div class="slider-labels" id="sliderLabels"><span data-i="0">Day</span><span data-i="1">Week</span><span data-i="2">Month</span><span data-i="3">3 mo</span></div>
+    </div>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="glass card">
+      <div class="label" id="trendTitle">Each day</div>
+      <div class="note" id="trendNote"></div>
+      <div class="chart" id="trend"></div>
+    </div>
+
+    <div class="glass card">
+      <div class="label" id="sitesTitle">Top sites</div>
+      <ul class="list" id="sites"></ul>
+      <button class="more" id="sitesMore" hidden></button>
+    </div>
+
+    <div class="glass card">
+      <div class="label">Time of day</div>
+      <div class="note" id="peak"></div>
+      <div class="chart" id="hourly"></div>
+    </div>
+
+    <div class="glass card">
+      <div class="label">Searches</div>
+      <div class="note" id="searchNote"></div>
+      <div class="seg-bar" id="searchBar"></div>
+      <ul class="list" id="engines"></ul>
+    </div>
+
+    <div class="glass card" id="pagesCard">
+      <div class="label">Reddit &amp; X</div>
+      <ul class="list" id="pages"></ul>
+    </div>
+
+    <div class="glass card">
+      <details>
+        <summary>About your data</summary>
+        <div class="note" style="margin-top:10px" id="aboutData"></div>
+        <button class="cta ghost" id="update2">Load newer data</button>
+        <button class="cta ghost danger" id="deleteBtn">Delete my data from this phone</button>
+        <div class="fine">Times are estimates, based on the gap between pages. Incognito tabs aren't included in Google's export.</div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+// Browsing Insights (web) — reads a Google Takeout Chrome export entirely in the browser.
+// Nothing is uploaded: the file is parsed here and the summary is kept in this browser's IndexedDB.
+
+const CATS = [
+  { k: 'social', label: 'Social', long: 'Social media', icon: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>' },
+  { k: 'video',  label: 'Video', long: 'Video', icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z"/>' },
+  { k: 'games',  label: 'Games', long: 'Video games', icon: '<path d="M6 9h12a4 4 0 0 1 3.9 4.9l-.6 2.6a2.5 2.5 0 0 1-4.2 1.2L15 16H9l-2.1 1.7a2.5 2.5 0 0 1-4.2-1.2l-.6-2.6A4 4 0 0 1 6 9z"/><path d="M8 11v3M6.5 12.5h3"/><circle cx="16" cy="12" r=".8"/><circle cx="17.5" cy="13.8" r=".8"/>' },
+  { k: 'shop',   label: 'Shopping', long: 'Shopping', icon: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>' },
+  { k: 'other',  label: 'Other', long: 'Everything else', icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>' },
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
+const CAT_KEYS = CATS.map(c => c.k);
+
+const DOMAINS = {
+  social: ['facebook.com', 'fb.com', 'messenger.com', 'instagram.com', 'threads.net', 'threads.com', 'tiktok.com', 'twitter.com', 'x.com',
+    'reddit.com', 'redd.it', 'snapchat.com', 'pinterest.com', 'tumblr.com', 'discord.com', 'linkedin.com', 'bsky.app', '9gag.com',
+    'telegram.org', 'whatsapp.com', 'vk.com', 'quora.com'],
+  video: ['youtube.com', 'youtu.be', 'twitch.tv', 'netflix.com', 'kick.com', 'vimeo.com', 'dailymotion.com', 'primevideo.com',
+    'disneyplus.com', 'hulu.com', 'max.com', 'bilibili.tv', 'crunchyroll.com', 'viu.com', 'iwanttfc.com', 'spotify.com'],
+  games: ['roblox.com', 'steampowered.com', 'steamcommunity.com', 'epicgames.com', 'itch.io', 'ign.com', 'gamespot.com', 'nexusmods.com',
+    'curseforge.com', 'minecraft.net', 'riotgames.com', 'leagueoflegends.com', 'valorant.com', 'chess.com', 'lichess.org', 'op.gg', 'u.gg',
+    'blizzard.com', 'battle.net', 'ea.com', 'xbox.com', 'playstation.com', 'nintendo.com', 'gog.com', 'humblebundle.com', 'speedrun.com',
+    'polygon.com', 'kotaku.com', 'pcgamer.com', 'hoyolab.com', 'hoyoverse.com', 'game8.co', 'fextralife.com', 'howlongtobeat.com', 'pokemon.com',
+    'moxfield.com', 'edhrec.com', 'scryfall.com', 'mtggoldfish.com', 'archidekt.com', 'untapped.gg'],
+  shop: ['amazon.com', 'shopee.ph', 'shopee.com', 'lazada.com.ph', 'lazada.com', 'ebay.com', 'aliexpress.com', 'temu.com', 'shein.com',
+    'walmart.com', 'etsy.com', 'target.com', 'bestbuy.com', 'zalora.com.ph', 'carousell.ph', 'carousell.com', 'tiktokshop.com', 'tcgplayer.com', 'cardkingdom.com'],
+};
+const domainCat = new Map();
+for (const [c, list] of Object.entries(DOMAINS)) for (const d of list) domainCat.set(d, c);
+function siteCategory(host) {
+  const parts = host.split('.');
+  for (let i = 0; i < parts.length - 1; i++) { const c = domainCat.get(parts.slice(i).join('.')); if (c) return c; }
+  return 'other';
+}
+const TWO_LEVEL = new Set(['co', 'com', 'net', 'org', 'gov', 'edu', 'ac', 'or', 'ne', 'go']);
+function baseDomain(host) {
+  const p = host.replace(/^(www\d?|m|mobile)\./, '').split('.');
+  if (p.length > 2 && p.at(-1).length === 2 && TWO_LEVEL.has(p.at(-2))) return p.slice(-3).join('.');
+  return p.slice(-2).join('.');
+}
+const X_RESERVED = new Set(['home', 'search', 'explore', 'i', 'notifications', 'messages', 'settings', 'compose', 'hashtag', 'login', 'logout', 'signup', 'tos', 'privacy', 'jobs', 'account']);
+function pageKey(u) {
+  const host = u.hostname.toLowerCase(), seg = u.pathname.split('/').filter(Boolean);
+  if (/(^|\.)reddit\.com$/.test(host)) {
+    if (seg[0] === 'r' && seg[1]) return `reddit r/${seg[1].toLowerCase()}`;
+    if ((seg[0] === 'user' || seg[0] === 'u') && seg[1]) return `reddit u/${seg[1].toLowerCase()}`;
+  }
+  if (/(^|\.)(x|twitter)\.com$/.test(host) && seg[0] && !X_RESERVED.has(seg[0].toLowerCase())) return `x @${seg[0].toLowerCase()}`;
+  return null;
+}
+const SEARCH = [
+  [/(^|\.)google\.[a-z.]+$/, '/search', 'q', 'Google'], [/(^|\.)bing\.com$/, '/search', 'q', 'Bing'],
+  [/(^|\.)duckduckgo\.com$/, '/', 'q', 'DuckDuckGo'], [/(^|\.)search\.yahoo\.com$/, '/search', 'p', 'Yahoo'],
+  [/(^|\.)youtube\.com$/, '/results', 'search_query', 'YouTube'], [/(^|\.)(x|twitter)\.com$/, '/search', 'q', 'X'],
+  [/(^|\.)reddit\.com$/, '/search', 'q', 'Reddit'], [/(^|\.)tiktok\.com$/, '/search', 'q', 'TikTok'],
+  [/(^|\.)facebook\.com$/, '/search', 'q', 'Facebook'],
+];
+function searchOf(u) {
+  const host = u.hostname.toLowerCase();
+  for (const [re, p, param, name] of SEARCH) if (re.test(host) && u.pathname.startsWith(p)) {
+    const q = u.searchParams.get(param); if (q && q.trim()) return { engine: name, term: q.trim().toLowerCase() };
+  }
+  return null;
+}
+const SOCIAL_WORDS = ['facebook', 'instagram', 'tiktok', 'twitter', 'reddit', 'snapchat', 'threads'];
+function searchCat(s) {
+  if (s.engine === 'YouTube') return 'video';
+  if (['X', 'Reddit', 'TikTok', 'Facebook'].includes(s.engine) || SOCIAL_WORDS.some(w => s.term.includes(w))) return 'social';
+  if (/\b(buy|price|cheap|sale|order|shop)\b/.test(s.term)) return 'shop';
+  if (/\b(game|games|gameplay|walkthrough|roblox|minecraft|steam|valorant)\b/.test(s.term)) return 'games';
+  return 'other';
+}
+
+// ---------- tiny IndexedDB key/value store ----------
+const idb = (() => {
+  let dbp;
+  const open = () => dbp ||= new Promise((res, rej) => {
+    const r = indexedDB.open('browsing-insights', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  const tx = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction('kv', mode); const req = fn(t.objectStore('kv')); t.oncomplete = () => res(req?.result); t.onerror = () => rej(t.error); }); };
+  return { get: k => tx('readonly', s => s.get(k)), set: (k, v) => tx('readwrite', s => s.put(v, k)), del: k => tx('readwrite', s => s.delete(k)) };
+})();
+const store = { get: k => { try { return localStorage[k]; } catch { return undefined; } }, set: (k, v) => { try { localStorage[k] = v; } catch {} } };
+
+// ---------- reading the Takeout file ----------
+const $ = s => document.querySelector(s);
+function progress(p, text) { $('#loadBar').style.width = Math.round(p * 100) + '%'; if (text) $('#loadText').textContent = text; }
+const nextFrame = () => new Promise(r => setTimeout(r, 0));
+
+async function readFile(file) {
+  progress(.05, 'Opening the file…');
+  let text = null;
+  if (/\.zip$/i.test(file.name) || file.type.includes('zip')) {
+    if (!window.JSZip) throw new Error('Could not load the zip reader. Check your internet connection and try again.');
+    const zip = await JSZip.loadAsync(file);
+    const entry = Object.values(zip.files).find(f => !f.dir && /(^|\/)(Browser)?History\.json$/i.test(f.name) && /chrome/i.test(f.name))
+      || Object.values(zip.files).find(f => !f.dir && /(Browser)?History\.json$/i.test(f.name));
+    if (!entry) throw new Error("This zip doesn't contain Chrome history. In Google Takeout, make sure Chrome is selected.");
+    progress(.15, 'Unpacking…');
+    text = await entry.async('string', m => progress(.15 + m.percent / 100 * .25));
+  } else {
+    text = await file.text();
+  }
+  progress(.42, 'Reading your history…'); await nextFrame();
+  let json;
+  try { json = JSON.parse(text); } catch { throw new Error("That file isn't readable. Pick the .zip Google sent, or the History.json inside it."); }
+  const raw = json['Browser History'] || json.BrowserHistory || json.browser_history || (Array.isArray(json) ? json : null);
+  if (!raw || !raw.length) throw new Error('No browsing history found in this file.');
+  return raw;
+}
+
+async function buildSummary(raw) {
+  const rows = [];
+  for (const r of raw) {
+    const ts = Number(r.time_usec) / 1e6;
+    if (!ts || !r.url || !/^https?:/i.test(r.url)) continue;
+    if (/RELOAD/i.test(r.page_transition || '')) continue;
+    rows.push({ ts, url: r.url, cid: r.client_id || '' });
+  }
+  rows.sort((a, b) => a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : a.ts - b.ts);
+  progress(.5, `Sorting ${rows.length.toLocaleString()} pages…`); await nextFrame();
+
+  const sites = [], siteIx = new Map(), pages = [], pageIx = new Map(), engines = [], engineIx = new Map();
+  const ix = (arr, map, key) => { let i = map.get(key); if (i === undefined) { i = arr.length; arr.push(key); map.set(key, i); } return i; };
+  const visits = [];
+  const lastTerm = new Map();
+  for (let i = 0; i < rows.length; i++) {
+    const v = rows[i], nx = rows[i + 1];
+    let u; try { u = new URL(v.url); } catch { continue; }
+    const gap = nx && nx.cid === v.cid ? nx.ts - v.ts : 60;
+    const secs = Math.max(0, Math.min(gap, 600));
+    const host = u.hostname.toLowerCase();
+    const cat = CAT_KEYS.indexOf(siteCategory(host));
+    const site = ix(sites, siteIx, baseDomain(host));
+    const pk = pageKey(u);
+    const page = pk ? ix(pages, pageIx, pk) : -1;
+    let eng = -1, scat = -1;
+    const s = searchOf(u);
+    if (s) {
+      const k = v.cid + s.term;
+      if (!lastTerm.has(k) || v.ts - lastTerm.get(k) > 1800) { eng = ix(engines, engineIx, s.engine); scat = CAT_KEYS.indexOf(searchCat(s)); }
+      lastTerm.set(k, v.ts);
+    }
+    visits.push([Math.round(v.ts), site, cat, Math.round(secs), page, eng, scat]);
+    if (i % 5000 === 0) { progress(.5 + i / rows.length * .45, `Sorting ${rows.length.toLocaleString()} pages…`); await nextFrame(); }
+  }
+  visits.sort((a, b) => a[0] - b[0]);
+  const devices = new Set(rows.map(r => r.cid)).size;
+  return { v: 1, savedAt: Date.now(), latest: visits.at(-1)?.[0] || 0, earliest: visits[0]?.[0] || 0, devices, visits, sites, pages, engines };
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  show('loading'); progress(0);
+  try {
+    const raw = await readFile(file);
+    const summary = await buildSummary(raw);
+    if (!summary.visits.length) throw new Error('No web pages found in this export.');
+    progress(.98, 'Saving on this phone…');
+    await idb.set('summary', summary);
+    progress(1, 'Done');
+    data = summary; cache.clear(); lastShownKey = null;
+    show('app'); render(true);
+  } catch (e) {
+    show(data ? 'app' : 'welcome');
+    const msg = e.message || String(e);
+    if (data) alert(msg); else $('#welcomeErr').textContent = msg;
+  } finally { $('#fileInput').value = ''; }
+}
+$('#fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+const pickFile = () => $('#fileInput').click();
+$('#loadBtn').onclick = pickFile;
+$('#takeoutBtn').addEventListener('click', () => { store.set('askedTakeout', String(Date.now())); $('#step1').classList.remove('active'); $('#step2').classList.add('active'); });
+if (store.get('askedTakeout')) { $('#step1').classList.remove('active'); $('#step2').classList.add('active'); }
+$('#updateBtn').onclick = () => { if (confirm('Load a newer Google export? It replaces the data now on this phone.')) pickFile(); };
+$('#update2').onclick = pickFile;
+$('#deleteBtn').onclick = async () => {
+  if (!confirm('Delete your browsing summary from this phone? You can load it again later from your Google export.')) return;
+  await idb.del('summary'); data = null; show('welcome');
+};
+function show(which) { for (const id of ['welcome', 'loading', 'app']) $('#' + id).hidden = id !== which; }
+
+// ---------- aggregation (ranges end on the last day in the export) ----------
+const RANGES = [{ d: 1, name: 'Day' }, { d: 7, name: 'Week' }, { d: 30, name: 'Month' }, { d: 90, name: '3 months' }];
+let data = null;
+const cache = new Map();
+const dayStart = ts => { const d = new Date(ts * 1000); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 1000; };
+const dayKey = ts => { const d = new Date(ts * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function aggregate(days) {
+  if (cache.has(days)) return cache.get(days);
+  const anchor = dayStart(data.latest);
+  const endDay = new Date(anchor * 1000);
+  const start = new Date(endDay.getFullYear(), endDay.getMonth(), endDay.getDate() - (days - 1)).getTime() / 1000;
+  const zero = () => Object.fromEntries(CAT_KEYS.map(k => [k, 0]));
+  const totals = { secs: zero(), visits: zero(), searches: zero() };
+  const daily = [];
+  const dIx = new Map();
+  for (let i = 0; i < days; i++) { const dt = new Date(endDay.getFullYear(), endDay.getMonth(), endDay.getDate() - (days - 1) + i); const k = dayKey(dt.getTime() / 1000); dIx.set(k, daily.length); daily.push({ day: k, secs: zero() }); }
+  const hourly = Array.from({ length: 24 }, () => ({ secs: zero() }));
+  const siteAgg = new Map(), pageAgg = new Map(), engAgg = new Map();
+  for (const [ts, site, ci, secs, page, eng, sci] of data.visits) {
+    if (ts < start) continue;
+    const c = CAT_KEYS[ci];
+    totals.secs[c] += secs; totals.visits[c]++;
+    const di = dIx.get(dayKey(ts)); if (di !== undefined) daily[di].secs[c] += secs;
+    hourly[new Date(ts * 1000).getHours()].secs[c] += secs;
+    const s = siteAgg.get(site) || siteAgg.set(site, { site: data.sites[site], cat: c, secs: 0, visits: 0 }).get(site);
+    s.secs += secs; s.visits++;
+    if (page >= 0) { const p = pageAgg.get(page) || pageAgg.set(page, { key: data.pages[page], cat: c, secs: 0, visits: 0 }).get(page); p.secs += secs; p.visits++; }
+    if (eng >= 0) { totals.searches[CAT_KEYS[sci]]++; engAgg.set(eng, (engAgg.get(eng) || 0) + 1); }
+  }
+  const out = {
+    totals, daily, hourly,
+    sites: [...siteAgg.values()].sort((a, b) => b.secs - a.secs).slice(0, 40),
+    pages: [...pageAgg.values()].sort((a, b) => b.visits - a.visits).slice(0, 12),
+    engines: [...engAgg.entries()].map(([i, n]) => ({ engine: data.engines[i], n })).sort((a, b) => b.n - a.n),
+  };
+  cache.set(days, out);
+  return out;
+}
+
+// ---------- formatting ----------
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hm = s => { const m = Math.round(s / 60); return m < 60 ? { h: 0, m } : { h: Math.floor(m / 60), m: m % 60 }; };
+const fmt = s => { const t = hm(s); return t.h ? (t.h >= 100 ? `${t.h}h` : `${t.h}h${t.m ? ' ' + t.m + 'm' : ''}`) : `${t.m}m`; };
+const fmtLong = s => { const t = hm(s); return t.h ? `${t.h} hr${t.m ? ' ' + t.m + ' min' : ''}` : `${t.m} min`; };
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+const svgIcon = body => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const hourLabel = i => new Date(2000, 0, 1, i).toLocaleTimeString([], { hour: 'numeric' }).replace(':00', '').replace(' ', '').toLowerCase();
+const longDate = ts => new Date(ts * 1000).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+const setText = (el, txt) => { if (el.textContent !== txt) el.textContent = txt; };
+const setHTML = (el, html) => { if (el._html !== html) { el._html = html; el.innerHTML = html; } };
+function setList(el, html, animate) { if (el._html === html) return; el._html = html; el.classList.toggle('fresh', !!animate); el.innerHTML = html; }
+
+// ---------- range slider ----------
+const state = { ri: Math.max(0, RANGES.findIndex(r => r.d === Number(store.get('days') || 7))), focus: null, showAll: false };
+const slider = $('#slider'), knob = $('#knob'), fill = $('#fill');
+function placeKnob(frac) { const w = slider.clientWidth, pad = 28; if (!w) return; const x = pad + frac * (w - pad * 2); knob.style.setProperty('--x', x + 'px'); fill.style.width = (x + 23) + 'px'; }
+function syncSlider() {
+  placeKnob(state.ri / (RANGES.length - 1));
+  document.querySelectorAll('#sliderLabels span').forEach(s => s.classList.toggle('on', +s.dataset.i === state.ri));
+  setText($('#rangeName'), '· ' + RANGES[state.ri].name);
+}
+let lastShownKey = null;
+function setRange(i) {
+  i = Math.max(0, Math.min(RANGES.length - 1, i));
+  if (i === state.ri) { syncSlider(); return; }
+  state.ri = i; store.set('days', RANGES[i].d); state.showAll = false; syncSlider();
+  requestAnimationFrame(() => render(true));
+}
+let dragging = false, dragFrac = 0;
+const fracAt = e => { const r = slider.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left - 28) / (r.width - 56))); };
+slider.addEventListener('pointerdown', e => { dragging = true; slider.classList.add('dragging'); slider.setPointerCapture(e.pointerId); dragFrac = fracAt(e); placeKnob(dragFrac); });
+slider.addEventListener('pointermove', e => { if (!dragging) return; dragFrac = fracAt(e); placeKnob(dragFrac); const near = Math.round(dragFrac * (RANGES.length - 1)); document.querySelectorAll('#sliderLabels span').forEach(s => s.classList.toggle('on', +s.dataset.i === near)); });
+const endDrag = () => { if (!dragging) return; dragging = false; slider.classList.remove('dragging'); setRange(Math.round(dragFrac * (RANGES.length - 1))); syncSlider(); };
+slider.addEventListener('pointerup', endDrag); slider.addEventListener('pointercancel', endDrag);
+slider.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') setRange(state.ri - 1); if (e.key === 'ArrowRight') setRange(state.ri + 1); });
+$('#minus').onclick = () => setRange(state.ri - 1);
+$('#plus').onclick = () => setRange(state.ri + 1);
+$('#sliderLabels').onclick = e => { const s = e.target.closest('span'); if (s) setRange(+s.dataset.i); };
+addEventListener('resize', syncSlider);
+
+// ---------- big number ----------
+const big = $('#big');
+let shownSecs = 0, numAnim, lastBigLen = 0;
+function bigHTML(secs) {
+  const t = hm(secs);
+  if (t.h >= 100) return [`${t.h}<small>h</small>`, String(t.h).length + 1];
+  if (t.h) return [`${t.h}<small>h</small> ${t.m}<small>m</small>`, String(t.h).length + String(t.m).length + 3];
+  return [`${t.m}<small>m</small>`, String(t.m).length + 1];
+}
+const sizeFor = len => len <= 4 ? 56 : len <= 5 ? 50 : len <= 6 ? 46 : len <= 7 ? 42 : 36;
+function paintBig(secs) { const [html, len] = bigHTML(secs); big.innerHTML = html; if (len !== lastBigLen) { big.style.fontSize = sizeFor(len) + 'px'; lastBigLen = len; } }
+function animateBig(target, animate) {
+  cancelAnimationFrame(numAnim);
+  const [, endLen] = bigHTML(target);
+  big.style.fontSize = sizeFor(Math.max(endLen, bigHTML(shownSecs)[1])) + 'px';
+  if (!animate || Math.abs(target - shownSecs) < 60) { shownSecs = target; paintBig(target); big.style.fontSize = sizeFor(endLen) + 'px'; return; }
+  const from = shownSecs, t0 = performance.now(), dur = 550;
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    shownSecs = from + (target - from) * e; big.innerHTML = bigHTML(shownSecs)[0];
+    if (p < 1) numAnim = requestAnimationFrame(step); else { lastBigLen = 0; paintBig(target); }
+  };
+  numAnim = requestAnimationFrame(step);
+}
+
+// ---------- ring ----------
+const R = 82, C = 2 * Math.PI * R, ringEls = {};
+for (const c of CATS) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  el.setAttribute('class', 'seg'); el.setAttribute('cx', 100); el.setAttribute('cy', 100); el.setAttribute('r', R);
+  el.setAttribute('stroke', `var(--${c.k})`); el.setAttribute('stroke-dasharray', `0 ${C}`);
+  el.style.cursor = 'pointer'; el.addEventListener('click', () => setFocus(c.k));
+  $('#ring').appendChild(el); ringEls[c.k] = el;
+}
+function drawRing(secs) {
+  const total = CAT_KEYS.reduce((a, k) => a + secs[k], 0) || 1;
+  const parts = CAT_KEYS.filter(k => secs[k] / total > 0.004);
+  const gap = parts.length > 1 ? 10 : 0;
+  let off = 0;
+  for (const k of CAT_KEYS) {
+    const el = ringEls[k], on = parts.includes(k), len = secs[k] / total * C, vis = on ? Math.max(0.5, len - gap) : 0;
+    el.setAttribute('stroke-dasharray', `${vis.toFixed(2)} ${(C - vis).toFixed(2)}`);
+    el.setAttribute('stroke-dashoffset', (-(off + gap / 2)).toFixed(2));
+    el.style.opacity = state.focus && state.focus !== k ? .18 : 1;
+    if (on) off += len;
+  }
+}
+
+// ---------- tiles ----------
+const tilesEl = $('#tiles');
+tilesEl.innerHTML = CATS.map(c => `<button class="tile" style="--c:var(--${c.k})" data-cat="${c.k}">${svgIcon(c.icon)}<div class="t-name">${c.label}</div><div class="t-val">–</div></button>`).join('') +
+  `<button class="tile action" id="dataTile" style="--c:var(--accent)">${svgIcon('<path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>')}<div class="t-name">Data up to</div><div class="t-val">–</div></button>`;
+const tileEls = Object.fromEntries(CAT_KEYS.map(k => [k, tilesEl.querySelector(`[data-cat="${k}"]`)]));
+function setFocus(k) { state.focus = state.focus === k ? null : k; state.showAll = false; render(false, true); }
+document.addEventListener('click', e => {
+  const t = e.target.closest('.tile[data-cat]'); if (t) return setFocus(t.dataset.cat);
+  if (e.target.closest('#dataTile')) { const det = document.querySelector('details'); det.open = true; det.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (e.target.closest('#sitesMore')) { state.showAll = !state.showAll; render(false, true); }
+});
+
+// ---------- render ----------
+function render(fresh, focusChange) {
+  if (!data) return;
+  syncSlider();
+  const days = RANGES[state.ri].d, d = aggregate(days), t = d.totals, f = state.focus;
+  const total = CAT_KEYS.reduce((a, k) => a + t.secs[k], 0);
+  const anim = fresh || focusChange;
+  const vis = k => !f || f === k;
+
+  animateBig(f ? t.secs[f] : total, anim);
+  setHTML($('#ringSub'), f ? `<b style="color:var(--${f})">${CAT[f].long}</b> · ${pct(t.secs[f], total)}%`
+    : days > 1 ? `about <b>${fmtLong(total / days)}</b> a day` : `on ${new Date(data.latest * 1000).toLocaleDateString([], { weekday: 'long' })}`);
+  drawRing(t.secs);
+
+  for (const k of CAT_KEYS) { tileEls[k].classList.toggle('on', f === k); setText(tileEls[k].querySelector('.t-val'), fmt(t.secs[k])); }
+  setText($('#dataTile .t-val'), new Date(data.latest * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' }));
+  tilesEl.classList.toggle('focused', !!f);
+
+  const lab = s => { const [y, m, dd] = s.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString([], days > 7 ? { month: 'short', day: 'numeric' } : { weekday: 'short' }); };
+  if (days === 1) {
+    setText($('#trendTitle'), 'Through the day'); setText($('#trendNote'), '');
+    bars('#trend', d.hourly.map((h, i) => ({ label: hourLabel(i), vals: h.secs })), i => i % 6 === 0, true, anim);
+  } else {
+    setText($('#trendTitle'), 'Each day');
+    const sum = x => f ? x.secs[f] : CAT_KEYS.reduce((a, k) => a + x.secs[k], 0);
+    const best = d.daily.reduce((a, x) => sum(x) > sum(a) ? x : a, d.daily[0]);
+    setHTML($('#trendNote'), best && sum(best) ? `Most on <b>${lab(best.day)}</b> · ${fmt(sum(best))}` : 'Nothing in this range.');
+    const n = d.daily.length, every = n <= 7 ? 1 : Math.ceil(n / 5);
+    bars('#trend', d.daily.map(x => ({ label: lab(x.day), vals: x.secs })), i => (n - 1 - i) % every === 0, true, anim);
+  }
+
+  const sites = d.sites.filter(s => vis(s.cat)), list = sites.slice(0, state.showAll ? 20 : 5), maxS = Math.max(1, ...sites.map(s => s.secs));
+  setText($('#sitesTitle'), f ? `Top ${CAT[f].label.toLowerCase()} sites` : 'Top sites');
+  setList($('#sites'), list.length ? list.map((s, i) => `<li style="--c:var(--${s.cat});animation-delay:${i * 35}ms"><span class="av">${esc(s.site[0] || '?')}</span>
+      <span class="grow"><span class="n">${esc(s.site)}</span><div class="mini"><i style="width:${(s.secs / maxS * 100).toFixed(1)}%"></i></div></span>
+      <span class="val">${fmt(s.secs)}</span></li>`).join('') : `<li style="color:var(--ink-3)">Nothing here.</li>`, anim);
+  $('#sitesMore').hidden = sites.length <= 5;
+  setText($('#sitesMore'), state.showAll ? 'Show fewer' : 'Show more');
+
+  const hourTotals = d.hourly.map(h => f ? h.secs[f] : CAT_KEYS.reduce((a, k) => a + h.secs[k], 0));
+  const peakH = hourTotals.indexOf(Math.max(...hourTotals));
+  setHTML($('#peak'), hourTotals[peakH] ? `Busiest around <b>${hourLabel(peakH)}</b>` : 'Nothing in this range.');
+  bars('#hourly', hourTotals.map((v, i) => ({ label: hourLabel(i), vals: { [f || 'other']: v }, single: true })), i => i % 6 === 0, false, anim);
+
+  const st = t.searches, sTotal = CAT_KEYS.reduce((a, k) => a + st[k], 0);
+  setHTML($('#searchNote'), sTotal ? `<b>${sTotal}</b> searches in this range` : 'No searches in this range.');
+  setHTML($('#searchBar'), CAT_KEYS.filter(k => st[k]).map(k => `<i style="flex-grow:${st[k]};background:var(--${k});opacity:${vis(k) ? 1 : .2}"></i>`).join(''));
+  setList($('#engines'), d.engines.slice(0, 4).map((e, i) => `<li style="animation-delay:${i * 35}ms"><span class="grow"><span class="n">${esc(e.engine)}</span></span><span class="val">${e.n}</span></li>`).join(''), fresh);
+
+  const pages = d.pages.filter(p => vis(p.cat));
+  $('#pagesCard').hidden = !pages.length;
+  setList($('#pages'), pages.map((p, i) => `<li style="--c:var(--${p.cat});animation-delay:${Math.min(i, 8) * 30}ms">
+      <span class="av" style="width:30px;height:30px;border-radius:10px;font-size:12px;text-transform:none">${p.key.startsWith('reddit') ? 'r/' : '@'}</span>
+      <span class="grow"><span class="n">${esc(p.key.replace(/^reddit r\//, '').replace(/^reddit /, '').replace(/^x @/, ''))}</span></span>
+      <span class="val">${fmt(p.secs)}</span></li>`).join(''), anim);
+
+  setHTML($('#aboutData'), `Your Google export covers <b>${longDate(data.earliest)}</b> to <b>${longDate(data.latest)}</b>: ${data.visits.length.toLocaleString()} pages from ${data.devices} device${data.devices === 1 ? '' : 's'} with Chrome sync. It's stored only in this browser. To update it, request a new export from Google and load it here.`);
+}
+
+// ---------- bar chart ----------
+function topRounded(x, y, w, h, r) { r = Math.min(r, w / 2, h); return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`; }
+function bars(sel, rows, showLabel, stacked, animate) {
+  const box = $(sel), f = state.focus;
+  const W = 360, H = 140, padB = 22, padT = 4, plotH = H - padB - padT, n = rows.length, slot = W / n;
+  const bw = Math.max(3, Math.min(24, slot * 0.6));
+  const order = stacked ? (f ? [f] : CAT_KEYS) : [f || 'other'];
+  const tot = rows.map(r => order.reduce((a, k) => a + (r.vals[k] || 0), 0));
+  const max = Math.max(60, ...tot), y = v => padT + plotH - v / max * plotH;
+  let g = '';
+  rows.forEach((r, i) => {
+    const x = +(i * slot + (slot - bw) / 2).toFixed(1);
+    const delay = animate ? ` style="animation-delay:${Math.min(i, 30) * 14}ms"` : '';
+    if (tot[i] > 0) {
+      const segs = order.filter(k => r.vals[k] > 0); let acc = 0;
+      segs.forEach((k, j) => {
+        const v = r.vals[k], y0 = y(acc), y1 = y(acc + v), h = y0 - y1;
+        const color = r.single ? (f ? `var(--${f})` : 'url(#accentGrad)') : `var(--${k})`;
+        g += j === segs.length - 1 ? `<path class="b"${delay} d="${topRounded(x, y1, bw, h, 6)}" fill="${color}"/>`
+          : `<rect class="b"${delay} x="${x}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${(h + .5).toFixed(1)}" fill="${color}"/>`;
+        acc += v;
+      });
+    } else g += `<rect x="${x}" y="${y(0) - 3}" width="${bw.toFixed(1)}" height="3" rx="1.5" fill="rgba(255,255,255,.07)"/>`;
+    if (showLabel(i)) g += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="11" fill="var(--ink-3)">${esc(r.label)}</text>`;
+    g += `<rect class="hit" data-i="${i}" x="${(i * slot).toFixed(1)}" y="0" width="${slot.toFixed(1)}" height="${H - padB}" fill="transparent"/>`;
+  });
+  const html = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart"><defs><linearGradient id="accentGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2f6ff0"/><stop offset="1" stop-color="#5fd0ff"/></linearGradient></defs>${g}</svg><div class="tip"></div>`;
+  if (box._html === html) return;
+  box._html = html; box.classList.toggle('fresh', !!animate); box.innerHTML = html;
+  const tip = box.querySelector('.tip');
+  const showTip = e => {
+    const el = e.target.closest('.hit'); if (!el) { tip.style.display = 'none'; return; }
+    const i = +el.dataset.i; tip.innerHTML = `${esc(rows[i].label)} · <b>${fmt(tot[i])}</b>`; tip.style.display = 'block';
+    const bb = box.getBoundingClientRect(), eb = el.getBoundingClientRect();
+    tip.style.left = Math.max(0, Math.min(bb.width - tip.offsetWidth, eb.left - bb.left + eb.width / 2 - tip.offsetWidth / 2)) + 'px';
+    tip.style.top = (-tip.offsetHeight - 8) + 'px';
+  };
+  box.onmousemove = showTip; box.onclick = showTip; box.onmouseleave = () => tip.style.display = 'none';
+}
+
+// ---------- start ----------
+(async () => {
+  try { data = await idb.get('summary'); } catch { data = null; }
+  if (data?.visits?.length) { show('app'); render(true); } else show('welcome');
+})();
+</script>
+</body>
+</html>
