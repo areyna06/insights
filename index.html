@@ -178,7 +178,11 @@
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
   /* ---------- web version: welcome + loading ---------- */
-  :root { --shop: #9085e9; }
+  :root { --ent: #d55181; --shop: #9085e9; --prod: #199e70; --news: #c98500; }
+  /* the "data up to" tile spans the full row under the six categories */
+  #dataTile { grid-column: 1 / -1; min-height: 0; display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  #dataTile .t-name { margin: 0; flex: 1; }
+  #dataTile .t-val { margin: 0; font-size: 15px; }
   .welcome { padding: 26px 22px; margin-top: 8vh; }
   .welcome h1 { font-size: 30px; font-weight: 700; letter-spacing: -.035em; line-height: 1.1; margin: 6px 0 8px; }
   .welcome .lead { color: var(--ink-2); font-size: 15px; }
@@ -372,40 +376,67 @@
 
 const CATS = [
   { k: 'social', label: 'Social', long: 'Social media', icon: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>' },
-  { k: 'video',  label: 'Video', long: 'Video', icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z"/>' },
-  { k: 'games',  label: 'Games', long: 'Video games', icon: '<path d="M6 9h12a4 4 0 0 1 3.9 4.9l-.6 2.6a2.5 2.5 0 0 1-4.2 1.2L15 16H9l-2.1 1.7a2.5 2.5 0 0 1-4.2-1.2l-.6-2.6A4 4 0 0 1 6 9z"/><path d="M8 11v3M6.5 12.5h3"/><circle cx="16" cy="12" r=".8"/><circle cx="17.5" cy="13.8" r=".8"/>' },
+  { k: 'ent',    label: 'Entertainment', long: 'Entertainment', icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z"/>' },
   { k: 'shop',   label: 'Shopping', long: 'Shopping', icon: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>' },
+  { k: 'prod',   label: 'School & Work', long: 'School & work', icon: '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12.5h18"/>' },
+  { k: 'news',   label: 'News & Info', long: 'News & info', icon: '<path d="M5 4h11a2 2 0 0 1 2 2v13a1 1 0 0 0 2 0V8"/><path d="M4 4v15a1 1 0 0 0 1 1h14"/><path d="M8 8h6M8 12h6M8 16h4"/>' },
   { k: 'other',  label: 'Other', long: 'Everything else', icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>' },
 ];
 const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
 const CAT_KEYS = CATS.map(c => c.k);
+// Category order used by summaries saved before November 2026 (they get converted on load).
+const OLD_CAT_KEYS = ['social', 'video', 'games', 'shop', 'other'];
+const OLD_TO_NEW = { social: 'social', video: 'ent', games: 'ent', shop: 'shop', other: 'other' };
 
 const DOMAINS = {
   social: ['facebook.com', 'fb.com', 'messenger.com', 'instagram.com', 'threads.net', 'threads.com', 'tiktok.com', 'twitter.com', 'x.com',
     'reddit.com', 'redd.it', 'snapchat.com', 'pinterest.com', 'tumblr.com', 'discord.com', 'linkedin.com', 'bsky.app', '9gag.com',
-    'telegram.org', 'whatsapp.com', 'vk.com', 'quora.com'],
-  video: ['youtube.com', 'youtu.be', 'twitch.tv', 'netflix.com', 'kick.com', 'vimeo.com', 'dailymotion.com', 'primevideo.com',
-    'disneyplus.com', 'hulu.com', 'max.com', 'bilibili.tv', 'crunchyroll.com', 'viu.com', 'iwanttfc.com', 'spotify.com'],
-  games: ['roblox.com', 'steampowered.com', 'steamcommunity.com', 'epicgames.com', 'itch.io', 'ign.com', 'gamespot.com', 'nexusmods.com',
+    'telegram.org', 'whatsapp.com', 'vk.com', 'quora.com', 'web.whatsapp.com', 'mastodon.social', 'bereal.com', 'lemon8-app.com'],
+  ent: ['youtube.com', 'youtu.be', 'twitch.tv', 'netflix.com', 'kick.com', 'vimeo.com', 'dailymotion.com', 'primevideo.com',
+    'disneyplus.com', 'hulu.com', 'max.com', 'bilibili.tv', 'bilibili.com', 'crunchyroll.com', 'viu.com', 'iwanttfc.com', 'spotify.com',
+    'soundcloud.com', 'music.apple.com', 'tv.apple.com', 'deezer.com', 'pandora.com', 'imdb.com', 'letterboxd.com', 'myanimelist.net',
+    'anilist.co', 'webtoons.com', 'mangadex.org', 'fandom.com', 'genius.com',
+    'roblox.com', 'steampowered.com', 'steamcommunity.com', 'epicgames.com', 'itch.io', 'ign.com', 'gamespot.com', 'nexusmods.com',
     'curseforge.com', 'minecraft.net', 'riotgames.com', 'leagueoflegends.com', 'valorant.com', 'chess.com', 'lichess.org', 'op.gg', 'u.gg',
     'blizzard.com', 'battle.net', 'ea.com', 'xbox.com', 'playstation.com', 'nintendo.com', 'gog.com', 'humblebundle.com', 'speedrun.com',
     'polygon.com', 'kotaku.com', 'pcgamer.com', 'hoyolab.com', 'hoyoverse.com', 'game8.co', 'fextralife.com', 'howlongtobeat.com', 'pokemon.com',
-    'moxfield.com', 'edhrec.com', 'scryfall.com', 'mtggoldfish.com', 'archidekt.com', 'untapped.gg'],
+    'moxfield.com', 'edhrec.com', 'scryfall.com', 'mtggoldfish.com', 'archidekt.com', 'untapped.gg', 'poki.com', 'crazygames.com'],
   shop: ['amazon.com', 'shopee.ph', 'shopee.com', 'lazada.com.ph', 'lazada.com', 'ebay.com', 'aliexpress.com', 'temu.com', 'shein.com',
-    'walmart.com', 'etsy.com', 'target.com', 'bestbuy.com', 'zalora.com.ph', 'carousell.ph', 'carousell.com', 'tiktokshop.com', 'tcgplayer.com', 'cardkingdom.com'],
+    'walmart.com', 'etsy.com', 'target.com', 'bestbuy.com', 'zalora.com.ph', 'carousell.ph', 'carousell.com', 'tiktokshop.com',
+    'tcgplayer.com', 'cardkingdom.com', 'ikea.com', 'nike.com', 'uniqlo.com', 'apple.com', 'samsung.com', 'grabfood.com', 'foodpanda.ph'],
+  prod: ['mail.google.com', 'docs.google.com', 'drive.google.com', 'classroom.google.com', 'meet.google.com', 'calendar.google.com',
+    'gemini.google.com', 'sheets.google.com', 'slides.google.com', 'forms.google.com', 'sites.google.com', 'scholar.google.com',
+    'keep.google.com', 'translate.google.com', 'notion.so', 'notion.site', 'canva.com', 'figma.com', 'github.com', 'gitlab.com',
+    'stackoverflow.com', 'chatgpt.com', 'openai.com', 'claude.ai', 'anthropic.com', 'perplexity.ai', 'copilot.microsoft.com', 'office.com',
+    'microsoft365.com', 'live.com', 'outlook.com', 'outlook.office.com', 'teams.microsoft.com', 'sharepoint.com', 'onedrive.live.com',
+    'zoom.us', 'slack.com', 'trello.com', 'asana.com', 'quizlet.com', 'grammarly.com', 'overleaf.com', 'coursera.org', 'udemy.com',
+    'khanacademy.org', 'duolingo.com', 'chegg.com', 'instructure.com', 'blackboard.com', 'moodlecloud.com', 'brainly.com', 'deepl.com',
+    'desmos.com', 'wolframalpha.com', 'quillbot.com', 'turnitin.com', 'edu.ph', 'cloud.microsoft'],
+  news: ['wikipedia.org', 'wikimedia.org', 'news.google.com', 'cnn.com', 'bbc.com', 'bbc.co.uk', 'nytimes.com', 'theguardian.com',
+    'reuters.com', 'apnews.com', 'foxnews.com', 'washingtonpost.com', 'bloomberg.com', 'forbes.com', 'cnbc.com', 'nbcnews.com',
+    'theverge.com', 'techcrunch.com', 'wired.com', 'engadget.com', 'inquirer.net', 'rappler.com', 'gmanetwork.com', 'abs-cbn.com',
+    'philstar.com', 'mb.com.ph', 'manilatimes.net', 'pna.gov.ph', 'espn.com', 'nba.com', 'basketball-reference.com', 'bleacherreport.com',
+    'medium.com', 'substack.com', 'weather.com', 'accuweather.com', 'pagasa.dost.gov.ph', 'britannica.com', 'nationalgeographic.com',
+    'yahoo.com', 'msn.com', 'time.com', 'aljazeera.com', 'npr.org'],
 };
 const domainCat = new Map();
 for (const [c, list] of Object.entries(DOMAINS)) for (const d of list) domainCat.set(d, c);
+// Works for full host names ("docs.google.com") and for the site names stored in summaries.
 function siteCategory(host) {
-  const parts = host.split('.');
+  const parts = String(host).toLowerCase().split('.');
   for (let i = 0; i < parts.length - 1; i++) { const c = domainCat.get(parts.slice(i).join('.')); if (c) return c; }
   return 'other';
 }
 const TWO_LEVEL = new Set(['co', 'com', 'net', 'org', 'gov', 'edu', 'ac', 'or', 'ne', 'go']);
+// App subdomains that are their own thing (Gmail isn't "Google search"), so they stay separate sites.
+const KEEP_SUBDOMAIN = /^(mail|docs|drive|classroom|meet|calendar|gemini|sheets|slides|forms|sites|scholar|keep|translate|news|maps|photos|music|tv|copilot|teams|outlook|onedrive)\./;
 function baseDomain(host) {
-  const p = host.replace(/^(www\d?|m|mobile)\./, '').split('.');
-  if (p.length > 2 && p.at(-1).length === 2 && TWO_LEVEL.has(p.at(-2))) return p.slice(-3).join('.');
-  return p.slice(-2).join('.');
+  const h = host.replace(/^(www\d?|m|mobile)\./, '');
+  const p = h.split('.');
+  const reg = (p.length > 2 && p.at(-1).length === 2 && TWO_LEVEL.has(p.at(-2))) ? p.slice(-3).join('.') : p.slice(-2).join('.');
+  const sub = h.slice(0, h.length - reg.length - 1);
+  if (sub && KEEP_SUBDOMAIN.test(sub.split('.').at(-1) + '.')) return sub.split('.').at(-1) + '.' + reg;
+  return reg;
 }
 const X_RESERVED = new Set(['home', 'search', 'explore', 'i', 'notifications', 'messages', 'settings', 'compose', 'hashtag', 'login', 'logout', 'signup', 'tos', 'privacy', 'jobs', 'account']);
 function pageKey(u) {
@@ -433,11 +464,23 @@ function searchOf(u) {
 }
 const SOCIAL_WORDS = ['facebook', 'instagram', 'tiktok', 'twitter', 'reddit', 'snapchat', 'threads'];
 function searchCat(s) {
-  if (s.engine === 'YouTube') return 'video';
+  if (s.engine === 'YouTube') return 'ent';
   if (['X', 'Reddit', 'TikTok', 'Facebook'].includes(s.engine) || SOCIAL_WORDS.some(w => s.term.includes(w))) return 'social';
-  if (/\b(buy|price|cheap|sale|order|shop)\b/.test(s.term)) return 'shop';
-  if (/\b(game|games|gameplay|walkthrough|roblox|minecraft|steam|valorant)\b/.test(s.term)) return 'games';
+  if (/\b(buy|price|prices|cheap|sale|order|shop|discount|coupon)\b/.test(s.term)) return 'shop';
+  if (/\b(how to|essay|homework|assignment|formula|define|definition|meaning|solve|calculator|translate|thesis|research|resume|example of)\b/.test(s.term)) return 'prod';
+  if (/\b(news|weather|score|scores|vs|election|typhoon|latest|today)\b/.test(s.term)) return 'news';
+  if (/\b(game|games|gameplay|walkthrough|roblox|minecraft|steam|valorant|movie|movies|series|anime|episode|song|lyrics|trailer)\b/.test(s.term)) return 'ent';
   return 'other';
+}
+// Convert a summary saved with the old categories, so people never have to reload their file.
+function migrateSummary(d) {
+  if (!d || d.v === 2) return false;
+  for (const v of d.visits) {
+    v[2] = CAT_KEYS.indexOf(siteCategory(d.sites[v[1]]));
+    if (v[6] >= 0) v[6] = CAT_KEYS.indexOf(OLD_TO_NEW[OLD_CAT_KEYS[v[6]]] || 'other');
+  }
+  d.v = 2;
+  return true;
 }
 
 // ---------- tiny IndexedDB key/value store ----------
@@ -677,7 +720,7 @@ async function buildSummary(raw) {
   }
   visits.sort((a, b) => a[0] - b[0]);
   const devices = new Set(rows.map(r => r.cid)).size;
-  return { v: 1, savedAt: Date.now(), latest: visits.at(-1)?.[0] || 0, earliest: visits[0]?.[0] || 0, devices, visits, sites, pages, engines };
+  return { v: 2, savedAt: Date.now(), latest: visits.at(-1)?.[0] || 0, earliest: visits[0]?.[0] || 0, devices, visits, sites, pages, engines };
 }
 
 async function handleFile(file) {
@@ -1027,7 +1070,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 // ---------- share card: a story-sized image with a brief, safe summary ----------
 // Shows only totals, percentages, peak hour and a "vibe" label. Never site names, searches or pages.
 const SHARE_W = 1080, SHARE_H = 1920;
-const CARD_COLORS = { social: '#3987e5', video: '#199e70', games: '#c98500', shop: '#9085e9', other: '#6a6b76' };
+const CARD_COLORS = { social: '#3987e5', ent: '#d55181', shop: '#9085e9', prod: '#199e70', news: '#c98500', other: '#6a6b76' };
 const shareState = { ri: null, showTime: store.get('shareShowTime') !== '0' };
 const siteUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
 let qrLibPromise = null;
@@ -1046,7 +1089,7 @@ const logoImg = new Image(); logoImg.src = 'icons/icon-192.png';
 function persona(d, peakH, topCat) {
   if (peakH >= 22 || peakH <= 4) return 'Night owl';
   if (peakH >= 5 && peakH <= 9) return 'Early bird';
-  return { social: 'Social butterfly', video: 'Binge watcher', games: 'Gamer at heart', shop: 'Window shopper' }[topCat] || 'Curious explorer';
+  return { social: 'Social butterfly', ent: 'Binge watcher', shop: 'Window shopper', prod: 'Productivity pro', news: 'Info junkie' }[topCat] || 'Curious explorer';
 }
 function shareSummary(ri) {
   const days = RANGES[ri].d, d = aggregate(days);
@@ -1069,78 +1112,119 @@ function shareSummary(ri) {
 function rrect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function fitFont(ctx, text, weight, size, maxW) { do { ctx.font = `${weight} ${size}px Inter, -apple-system, "Segoe UI", sans-serif`; } while (ctx.measureText(text).width > maxW && (size -= 4) > 20); return size; }
 const hourWord = h => new Date(2000, 0, 1, h).toLocaleTimeString([], { hour: 'numeric' }).replace(':00', '').toLowerCase();
+function sparkle(ctx, x, y, s, color) {
+  ctx.save(); ctx.translate(x, y); ctx.fillStyle = color; ctx.beginPath();
+  ctx.moveTo(0, -s); ctx.quadraticCurveTo(0, 0, s, 0); ctx.quadraticCurveTo(0, 0, 0, s); ctx.quadraticCurveTo(0, 0, -s, 0); ctx.quadraticCurveTo(0, 0, 0, -s);
+  ctx.fill(); ctx.restore();
+}
+const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 
 async function drawShareCard(canvas, s) {
-  try { await Promise.all(['400', '500', '600', '700'].map(w => document.fonts.load(`${w} 40px Inter`))); } catch {}
+  try { await Promise.all(['400', '500', '600', '700', '800'].map(w => document.fonts.load(`${w} 40px Inter`))); } catch {}
   const ctx = canvas.getContext('2d'), W = SHARE_W, H = SHARE_H, F = 'Inter, -apple-system, "Segoe UI", sans-serif';
   canvas.width = W; canvas.height = H;
-  // background
-  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#171a2e'); bg.addColorStop(.55, '#0c0d17'); bg.addColorStop(1, '#07070d');
+  const accent = CARD_COLORS[s.topCat] || '#3987e5';
+
+  // background + glow in the top category's colour
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#171a2e'); bg.addColorStop(.5, '#0c0d17'); bg.addColorStop(1, '#07070d');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W / 2, 80, 0, W / 2, 80, 900); glow.addColorStop(0, 'rgba(91,75,214,.45)'); glow.addColorStop(1, 'rgba(91,75,214,0)');
-  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+  let g = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, 900); g.addColorStop(0, 'rgba(91,75,214,.42)'); g.addColorStop(1, 'rgba(91,75,214,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  g = ctx.createRadialGradient(W / 2, 515, 0, W / 2, 515, 400); g.addColorStop(0, hexA(accent, .28)); g.addColorStop(1, hexA(accent, 0));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
   // header
   if (logoImg.complete && logoImg.naturalWidth) { ctx.save(); rrect(ctx, 60, 64, 72, 72, 18); ctx.clip(); ctx.drawImage(logoImg, 60, 64, 72, 72); ctx.restore(); }
-  ctx.fillStyle = '#f2f3f7'; ctx.font = `600 44px ${F}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText('Tabwise', 150, 101);
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#f2f3f7'; ctx.font = `600 44px ${F}`; ctx.fillText('Tabwise', 150, 101);
   ctx.textAlign = 'right'; ctx.fillStyle = '#8b8d9c'; ctx.font = `500 32px ${F}`; ctx.fillText(s.dates, W - 60, 101);
   // title
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#ffffff';
-  fitFont(ctx, s.title, 700, 92, W - 120); ctx.fillText(s.title, 60, 270);
+  fitFont(ctx, s.title, 800, 88, W - 120); ctx.fillText(s.title, 60, 250);
+
   // ring
-  const cx = W / 2, cy = 640, r = 235, lw = 62, total = s.parts.reduce((a, p) => a + p.v, 0) || 1;
+  const cx = W / 2, cy = 515, r = 185, lw = 52, total = s.parts.reduce((a, p) => a + p.v, 0) || 1;
   ctx.lineWidth = lw; ctx.lineCap = 'butt'; ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
-  const gap = s.parts.length > 1 ? 0.075 : 0; let a = -Math.PI / 2;
+  const gap = s.parts.length > 1 ? 0.08 : 0; let a = -Math.PI / 2;
   ctx.lineCap = 'round';
   for (const p of s.parts) {
     const sweep = p.v / total * Math.PI * 2;
-    if (sweep - gap > 0.02) { ctx.strokeStyle = CARD_COLORS[p.k]; ctx.beginPath(); ctx.arc(cx, cy, r, a + gap / 2 + .06, a + sweep - gap / 2 - .06); ctx.stroke(); }
+    if (sweep - gap > 0.02) { ctx.strokeStyle = CARD_COLORS[p.k]; ctx.beginPath(); ctx.arc(cx, cy, r, a + gap / 2 + .07, a + sweep - gap / 2 - .07); ctx.stroke(); }
     a += sweep;
   }
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  // sparkles around the ring for a bit of fun
+  [[cx - 290, cy - 140, 26, '#ffffff'], [cx + 270, cy - 170, 18, accent], [cx + 300, cy + 110, 30, '#ffffff'], [cx - 300, cy + 150, 16, accent], [cx - 240, cy - 220, 10, '#ffffff']]
+    .forEach(([x, y, sz, c]) => sparkle(ctx, x, y, sz, c === '#ffffff' ? 'rgba(255,255,255,.85)' : c));
+  ctx.textAlign = 'center';
   const top = s.parts.find(p => p.k === s.topCat);
   const bigText = shareState.showTime ? fmt(s.perDay) : `${pct(top?.v || 0, total)}%`;
-  const subText = shareState.showTime ? (s.days === 1 ? 'online today' : 'a day, on average') : `on ${CAT[s.topCat].long.toLowerCase()}`;
-  ctx.fillStyle = '#ffffff'; fitFont(ctx, bigText, 700, 128, 2 * (r - lw) - 30); ctx.fillText(bigText, cx, cy + 30);
-  ctx.fillStyle = '#a9abb8'; ctx.font = `500 38px ${F}`; ctx.fillText(subText, cx, cy + 92);
+  const subText = shareState.showTime ? (s.days === 1 ? 'online that day' : 'a day, on average') : `on ${CAT[s.topCat].long.toLowerCase()}`;
+  ctx.fillStyle = '#ffffff'; fitFont(ctx, bigText, 800, 112, 2 * (r - lw / 2) - 70); ctx.fillText(bigText, cx, cy + 26);
+  ctx.fillStyle = '#a9abb8'; fitFont(ctx, subText, 500, 34, 2 * (r - lw / 2) - 70); ctx.fillText(subText, cx, cy + 80);
+
   // legend (percentages only)
-  let y = 990;
-  ctx.textBaseline = 'middle';
+  let y = 770; ctx.textBaseline = 'middle';
   for (const p of s.parts.slice(0, 4)) {
-    ctx.fillStyle = CARD_COLORS[p.k]; ctx.beginPath(); ctx.arc(210, y, 14, 0, Math.PI * 2); ctx.fill();
-    ctx.textAlign = 'left'; ctx.fillStyle = '#e8e9ef'; ctx.font = `500 42px ${F}`; ctx.fillText(CAT[p.k].long, 250, y);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; ctx.font = `700 42px ${F}`; ctx.fillText(`${pct(p.v, total)}%`, W - 180, y);
-    y += 72;
+    ctx.fillStyle = CARD_COLORS[p.k]; ctx.beginPath(); ctx.arc(200, y, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#e8e9ef'; ctx.font = `500 40px ${F}`; ctx.fillText(CAT[p.k].long, 236, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; ctx.font = `700 40px ${F}`; ctx.fillText(`${pct(p.v, total)}%`, W - 190, y);
+    y += 56;
   }
-  // two stat pills
-  const pill = (x, label, value) => {
-    ctx.fillStyle = 'rgba(255,255,255,.06)'; rrect(ctx, x, 1300, 470, 150, 38); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.09)'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.textAlign = 'left'; ctx.fillStyle = '#8b8d9c'; ctx.font = `500 30px ${F}`; ctx.fillText(label, x + 36, 1348);
-    ctx.fillStyle = '#ffffff'; fitFont(ctx, value, 700, 50, 400); ctx.fillText(value, x + 36, 1404);
+  // stat pills
+  const pill = (x, label, value, tint) => {
+    ctx.fillStyle = 'rgba(255,255,255,.06)'; rrect(ctx, x, 986, 470, 116, 36); ctx.fill();
+    ctx.strokeStyle = tint ? hexA(accent, .55) : 'rgba(255,255,255,.09)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#8b8d9c'; ctx.font = `500 28px ${F}`; ctx.fillText(label, x + 34, 1028);
+    ctx.fillStyle = '#ffffff'; fitFont(ctx, value, 700, 44, 400); ctx.fillText(value, x + 34, 1078);
   };
-  pill(60, 'Peak hour', hourWord(s.peakH)); pill(550, 'My vibe', s.vibe);
-  // "Add yours"-style invite card
-  const cy0 = 1500, ch = 340;
-  ctx.fillStyle = '#ffffff'; rrect(ctx, 60, cy0, W - 120, ch, 44); ctx.fill();
-  const url = siteUrl(), short = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  let qrSize = 0;
+  pill(60, 'Peak hour', hourWord(s.peakH)); pill(550, 'My vibe', s.vibe, true);
+
+  // ----- the "Add yours"-style sticker -----
+  const sx = 100, sy = 1150, sw = W - 200, sh = 680, scx = sx + sw / 2, scy = sy + sh / 2;
+  ctx.save();
+  ctx.translate(scx, scy); ctx.rotate(-0.025); ctx.translate(-scx, -scy);
+  ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 50; ctx.shadowOffsetY = 18;
+  ctx.fillStyle = '#ffffff'; rrect(ctx, sx, sy, sw, sh, 52); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  // prompt
+  ctx.fillStyle = '#111218'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  fitFont(ctx, 'Where does your', 800, 58, sw - 100); ctx.fillText('Where does your', scx, sy + 96);
+  fitFont(ctx, 'screen time go?', 800, 58, sw - 100); ctx.fillText('screen time go?', scx, sy + 164);
+  // QR in the middle
+  const url = siteUrl();
   try {
     const qrcode = await loadQr(); const q = qrcode(0, 'M'); q.addData(url); q.make();
-    const n = q.getModuleCount(); qrSize = 250; const cell = qrSize / n, qx = W - 60 - 45 - qrSize, qy = cy0 + (ch - qrSize) / 2;
+    const n = q.getModuleCount(), qs = 250, cell = qs / n, qx = scx - qs / 2, qy = sy + 200;
     ctx.fillStyle = '#0b0c14';
     for (let rr = 0; rr < n; rr++) for (let cc = 0; cc < n; cc++) if (q.isDark(rr, cc)) ctx.fillRect(qx + cc * cell, qy + rr * cell, Math.ceil(cell), Math.ceil(cell));
-  } catch { qrSize = 0; }
-  const textW = W - 120 - 90 - (qrSize ? qrSize + 40 : 0);
-  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = '#111218'; fitFont(ctx, 'Where does your', 700, 54, textW); ctx.fillText('Where does your', 105, cy0 + 92);
-  fitFont(ctx, 'screen time go?', 700, 54, textW); ctx.fillText('screen time go?', 105, cy0 + 156);
-  // "button"
-  ctx.fillStyle = '#2f6ff0'; rrect(ctx, 105, cy0 + 196, Math.min(textW, 330), 74, 37); ctx.fill();
-  ctx.fillStyle = '#ffffff'; ctx.font = `700 36px ${F}`; ctx.textBaseline = 'middle'; ctx.fillText('↗  Find yours', 140, cy0 + 234);
-  ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#6b6d78'; fitFont(ctx, short, 500, 28, textW); ctx.fillText(short, 105, cy0 + 312);
-  // footer note
-  ctx.textAlign = 'center'; ctx.fillStyle = '#5d5f6c'; ctx.font = `500 26px ${F}`;
-  ctx.fillText('No sites or searches shown. Made privately on my device.', W / 2, 1884);
+  } catch {
+    ctx.fillStyle = '#6b6d78'; fitFont(ctx, url.replace(/^https?:\/\//, ''), 600, 34, sw - 100); ctx.fillText(url.replace(/^https?:\/\//, ''), scx, sy + 310);
+  }
+  // avatar row: reply-arrow bubble + overlapping circles + "+ you?"
+  const ay = sy + 512, ar = 30, colors = s.parts.filter(p => p.k !== s.topCat).slice(0, 3).map(p => CARD_COLORS[p.k]);
+  while (colors.length < 3) colors.push(['#3987e5', '#199e70', '#9085e9'][colors.length]);
+  ctx.font = `700 34px ${F}`; const youW = ctx.measureText('+ you?').width;
+  const rowW = ar * 2 + 3 * (ar * 2 - 18) + 18 + youW; let ax = scx - rowW / 2 + ar;
+  const bubble = (x, fill) => { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, ay, ar + 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(x, ay, ar, 0, Math.PI * 2); ctx.fill(); };
+  bubble(ax, '#ff2e74');
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(ax + 11, ay + 10); ctx.quadraticCurveTo(ax + 11, ay - 6, ax - 6, ay - 6); ctx.lineTo(ax - 12, ay - 6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ax - 3, ay - 15); ctx.lineTo(ax - 12, ay - 6); ctx.lineTo(ax - 3, ay + 3); ctx.stroke();
+  for (const c of colors) { ax += ar * 2 - 18; bubble(ax, c); }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#5b5d68'; ctx.font = `700 34px ${F}`; ctx.fillText('+ you?', ax + ar + 18, ay + 2);
+  // divider
+  ctx.fillStyle = '#e7e8ec'; ctx.fillRect(sx, sy + 572, sw, 3);
+  // camera icon + "Add yours"
+  ctx.font = `700 48px ${F}`; const label = 'Add yours', lw2 = ctx.measureText(label).width, iw = 52, by = sy + 628;
+  let bx = scx - (iw + 18 + lw2) / 2;
+  ctx.fillStyle = '#3b6cf6'; rrect(ctx, bx, by - 20, iw, 40, 10); ctx.fill(); ctx.fillRect(bx + 14, by - 26, 18, 8);
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(bx + iw / 2, by + 1, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3b6cf6'; ctx.beginPath(); ctx.arc(bx + iw / 2, by + 1, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.textAlign = 'left'; ctx.fillStyle = '#3b6cf6'; ctx.fillText(label, bx + iw + 18, by + 2);
+  ctx.restore();
+
+  // footer: where to go + privacy
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#c3c5d0'; fitFont(ctx, url.replace(/^https?:\/\//, '').replace(/\/$/, ''), 600, 30, W - 120); ctx.fillText(url.replace(/^https?:\/\//, '').replace(/\/$/, ''), W / 2, 1882);
 }
 
 async function renderShare() {
@@ -1177,6 +1261,7 @@ function downloadBlob(blob) {
 // ---------- start ----------
 (async () => {
   try { data = await idb.get('summary'); } catch { data = null; }
+  try { if (migrateSummary(data)) await idb.set('summary', data); } catch {}
   if (data?.visits?.length) { show('app'); render(true); } else show('welcome');
 })();
 </script>

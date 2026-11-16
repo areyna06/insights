@@ -1,6 +1,6 @@
 // Tabwise offline helper. It only caches the app's own files (and its font and zip reader).
 // It never sees or stores browsing data: that lives in the page's own browser storage.
-const VERSION = 'tabwise-v3';
+const VERSION = 'tabwise-v4';
 const CORE = ['./', './index.html', './privacy.html', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 const RUNTIME_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com'];
