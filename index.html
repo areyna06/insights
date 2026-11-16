@@ -205,43 +205,40 @@
   .tile.action .ic { color: var(--accent-2); }
   .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .danger { color: #ff8a8a !important; }
+
+  /* browser picker + file steps */
+  .browser-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .browser-pick button { border: 1px solid var(--edge); background: rgba(255,255,255,.04); color: var(--ink-2); border-radius: 99px; padding: 7px 13px; font-size: 13px; cursor: pointer; }
+  .browser-pick button[aria-pressed="true"] { background: #fff; color: #0b0c14; border-color: #fff; font-weight: 600; }
+  .steps2 code, .welcome code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; background: rgba(255,255,255,.07); padding: 1px 5px; border-radius: 6px; color: var(--ink); word-break: break-all; }
+  .path-box { display: flex; gap: 8px; align-items: center; margin-top: 8px; padding: 8px 8px 8px 12px; border-radius: 12px; background: rgba(0,0,0,.25); border: 1px solid var(--edge); }
+  .path-box code { flex: 1; min-width: 0; background: none; padding: 0; font-size: 12.5px; }
+  .copy { flex: none; border: 1px solid var(--edge); background: rgba(255,255,255,.08); color: var(--ink); border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+  details.alt { margin-top: 10px; }
+  details.alt > summary { font-size: 13px; color: var(--accent-2); }
+  details.alt[open] > summary { margin-bottom: 4px; }
+  .steps2 li.phone-note { display: block; background: none; border: 0; padding: 0 4px; font-size: 12.5px; color: var(--ink-3); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 </head>
 <body>
 <main>
-  <input type="file" id="fileInput" class="hidden-input" accept=".zip,.json,application/zip,application/json">
+  <input type="file" id="fileInput" class="hidden-input">
 
   <!-- 1. Welcome: shown until data is loaded -->
   <section id="welcome" class="glass welcome" hidden>
     <div class="label" style="display:flex;align-items:center;gap:8px"><img src="icons/icon-192.png" alt="" width="22" height="22" style="border-radius:6px">Tabwise</div>
     <h1>See where your browsing time goes</h1>
-    <div class="lead">Two quick steps. Your data stays on this phone. It's never uploaded anywhere.</div>
-    <ol class="steps2">
-      <li class="active" id="step1">
-        <span class="num">1</span>
-        <div style="flex:1">
-          <div class="s-title">Ask Google for your Chrome history</div>
-          <div class="s-text">Chrome is already selected. Scroll down, tap <b>Next step</b>, then <b>Create export</b>. Google emails you when it's ready (usually minutes, sometimes a few hours).</div>
-          <a class="cta primary" id="takeoutBtn" href="https://takeout.google.com/settings/takeout/custom/chrome" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>
-            Get my data from Google</a>
-        </div>
-      </li>
-      <li id="step2">
-        <span class="num">2</span>
-        <div style="flex:1">
-          <div class="s-title">Open the file here</div>
-          <div class="s-text">When Google's email arrives, download the file, come back to this page and tap below. Pick the <b>.zip</b> you downloaded (on iPhone it's in <b>Files → Downloads</b>).</div>
-          <button class="cta ghost" id="loadBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
-            Load my data</button>
-        </div>
-      </li>
-    </ol>
+    <div class="lead">Your history stays on this device. It's never uploaded anywhere.</div>
+    <div class="label" style="margin-top:22px">Which browser do you use?</div>
+    <div class="browser-pick" id="browserPick" role="tablist" aria-label="Your browser">
+      <button data-b="chrome">Chrome</button><button data-b="opera">Opera / GX</button><button data-b="edge">Edge</button>
+      <button data-b="brave">Brave</button><button data-b="firefox">Firefox</button><button data-b="other">Other</button>
+    </div>
+    <ol class="steps2" id="stepsBox"></ol>
     <div class="privacy">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-      <span>Everything is worked out inside your phone's browser. Nothing is sent to anyone, including whoever shared this link. You can delete it from this phone any time. <a href="privacy.html" style="color:var(--ink)">Privacy</a></span>
+      <span>Everything is worked out inside your browser. Nothing is sent to anyone, including whoever shared this link. You can delete it from this device any time. <a href="privacy.html" style="color:var(--ink)">Privacy</a></span>
     </div>
     <div class="err" id="welcomeErr" style="margin-top:12px"></div>
   </section>
@@ -319,8 +316,8 @@
         <summary>About your data</summary>
         <div class="note" style="margin-top:10px" id="aboutData"></div>
         <button class="cta ghost" id="update2">Load newer data</button>
-        <button class="cta ghost danger" id="deleteBtn">Delete my data from this phone</button>
-        <div class="fine">Times are estimates, based on the gap between pages. Incognito tabs aren't included in Google's export. <a href="privacy.html">Privacy</a></div>
+        <button class="cta ghost danger" id="deleteBtn">Delete my data from this device</button>
+        <div class="fine">Times are estimates, based on the gap between pages. Private and incognito tabs are never saved to history, so they aren't included. <a href="privacy.html">Privacy</a></div>
       </details>
     </div>
   </section>
@@ -413,41 +410,201 @@ const idb = (() => {
 })();
 const store = { get: k => { try { return localStorage[k]; } catch { return undefined; } }, set: (k, v) => { try { localStorage[k] = v; } catch {} } };
 
-// ---------- reading the Takeout file ----------
+// ---------- reading history files ----------
+// Accepts, auto-detected by content (not by file name):
+//  - Google Takeout: the .zip, or the History.json / BrowserHistory.json inside it
+//  - Browser history databases: "History" from Chrome, Opera, Opera GX, Edge, Brave, Vivaldi, Arc
+//    (all Chromium), "places.sqlite" from Firefox, "History.db" from Safari on Mac,
+//    or any of those inside a .zip
+//  - JSON or CSV exports from history-export extensions (needs a URL column and a time column)
+// Everything is read inside this browser; nothing is uploaded.
 const $ = s => document.querySelector(s);
 function progress(p, text) { $('#loadBar').style.width = Math.round(p * 100) + '%'; if (text) $('#loadText').textContent = text; }
 const nextFrame = () => new Promise(r => setTimeout(r, 0));
+const SQL_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/';
+let sqlPromise = null;
+function loadSql() {
+  return sqlPromise ||= new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = SQL_CDN + 'sql-wasm.js'; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+    s.onload = () => initSqlJs({ locateFile: f => SQL_CDN + f }).then(res, rej);
+    s.onerror = () => { sqlPromise = null; rej(new Error('Could not load the history reader. Check your internet connection and try again.')); };
+    document.head.appendChild(s);
+  });
+}
+const isSqlite = bytes => bytes.length >= 16 && String.fromCharCode(...bytes.slice(0, 15)) === 'SQLite format 3';
+const isZip = bytes => bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+
+// Turn any timestamp into Unix seconds: Chromium (µs since 1601), µs, ms or s since 1970, or a date string.
+function toSeconds(v) {
+  if (v === null || v === undefined || v === '') return NaN;
+  if (typeof v === 'string' && !/^\s*-?\d+(\.\d+)?\s*$/.test(v)) { const t = Date.parse(v); return isNaN(t) ? NaN : t / 1000; }
+  const n = Number(v);
+  if (!isFinite(n) || n <= 0) return NaN;
+  if (n > 1e16) return n / 1e6 - 11644473600;   // Chromium/WebKit time
+  if (n > 1e14) return n / 1e6;                 // microseconds
+  if (n > 1e11) return n / 1e3;                 // milliseconds
+  return n;                                     // seconds
+}
+
+async function readSqlite(bytes) {
+  progress(.2, 'Loading the history reader…');
+  const SQL = await loadSql();
+  progress(.3, 'Reading your history…'); await nextFrame();
+  let db;
+  try { db = new SQL.Database(bytes); } catch { throw new Error("That database couldn't be opened. Close the browser completely, then pick the History file again."); }
+  try {
+    let tables;
+    try { tables = new Set(db.exec("SELECT name FROM sqlite_master WHERE type='table'")[0]?.values.map(r => r[0]) || []); }
+    catch { throw new Error("That database couldn't be read. It may be from a browser that was still open. Close it completely and try again."); }
+    const cols = t => new Set((db.exec(`PRAGMA table_info(${t})`)[0]?.values || []).map(r => r[1]));
+    let sql;
+    if (tables.has('visits') && tables.has('urls')) {
+      // Chromium: Chrome, Opera, Opera GX, Edge, Brave, Vivaldi, Arc. Skip subframes (3, 4) and reloads (8).
+      const cid = cols('visits').has('originator_cache_guid') ? "IFNULL(v.originator_cache_guid, '')" : "''";
+      sql = `SELECT CAST(v.visit_time / 1000000 - 11644473600 AS INTEGER), u.url, ${cid}
+             FROM visits v JOIN urls u ON u.id = v.url WHERE (v.transition & 255) NOT IN (3, 4, 8)`;
+    } else if (tables.has('moz_historyvisits') && tables.has('moz_places')) {
+      // Firefox: skip embedded frames, redirects and reloads.
+      sql = `SELECT CAST(h.visit_date / 1000000 AS INTEGER), p.url, '' FROM moz_historyvisits h
+             JOIN moz_places p ON p.id = h.place_id WHERE h.visit_type NOT IN (4, 5, 6, 9)`;
+    } else if (tables.has('history_visits') && tables.has('history_items')) {
+      // Safari (Mac): seconds since 2001.
+      sql = `SELECT CAST(v.visit_time + 978307200 AS INTEGER), i.url, '' FROM history_visits v
+             JOIN history_items i ON i.id = v.history_item`;
+    } else {
+      throw new Error("This file isn't browser history. Pick the file named \"History\" (Opera, Opera GX, Chrome, Edge, Brave) or \"places.sqlite\" (Firefox).");
+    }
+    const rows = [];
+    const stmt = db.prepare(sql);
+    let n = 0;
+    while (stmt.step()) {
+      const [ts, url, cid] = stmt.get();
+      rows.push({ ts, url, cid: cid || '' });
+      if (++n % 20000 === 0) { progress(.3 + Math.min(.15, n / 1e6), `Reading ${n.toLocaleString()} visits…`); await nextFrame(); }
+    }
+    stmt.free();
+    return rows;
+  } finally { db.close(); }
+}
+
+function rowsFromJson(json) {
+  // Google Takeout (Chrome)
+  const takeout = json && (json['Browser History'] || json.BrowserHistory || json.browser_history);
+  if (Array.isArray(takeout)) {
+    return takeout.filter(r => !/RELOAD/i.test(r.page_transition || ''))
+      .map(r => ({ ts: toSeconds(r.time_usec), url: r.url, cid: r.client_id || '' }));
+  }
+  // Generic: the first array of objects that has a URL field
+  const find = o => {
+    if (Array.isArray(o)) return o.length && typeof o[0] === 'object' && o[0] && Object.keys(o[0]).some(k => /^url$|^uri$|^link$|^href$/i.test(k)) ? o : null;
+    if (o && typeof o === 'object') for (const v of Object.values(o)) { const f = find(v); if (f) return f; }
+    return null;
+  };
+  const arr = find(json);
+  if (!arr) return null;
+  const keys = Object.keys(arr[0]);
+  const urlKey = keys.find(k => /^url$|^uri$|^link$|^href$/i.test(k));
+  const timeKey = keys.find(k => /^(time_usec|visit_?time|last_?visit_?time|visited_?at|visit_?date|time|timestamp|date|datetime|lastVisitTime|visitTime)$/i.test(k))
+    || keys.find(k => /time|date/i.test(k));
+  if (!timeKey) throw new Error('This file has web addresses but no visit times, so time spent can’t be worked out.');
+  return arr.map(r => ({ ts: toSeconds(r[timeKey]), url: r[urlKey], cid: '' }));
+}
+
+function parseCsv(text) {
+  const rows = []; let row = [], field = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; } else field += c; }
+    else if (c === '"') q = true;
+    else if (c === ',' || c === ';' || c === '\t') { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(field); rows.push(row); row = []; field = ''; }
+    else field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+function rowsFromCsv(text) {
+  const t = parseCsv(text.replace(/^﻿/, ''));
+  if (t.length < 2) return null;
+  const head = t[0].map(h => h.trim().toLowerCase());
+  const ui = head.findIndex(h => /^(url|uri|link|address|web address)$/.test(h)) >= 0 ? head.findIndex(h => /^(url|uri|link|address|web address)$/.test(h)) : head.findIndex(h => h.includes('url'));
+  const ti = head.findIndex(h => /visit|time|date/.test(h));
+  if (ui < 0) return null;
+  if (ti < 0) throw new Error('This file has web addresses but no visit times, so time spent can’t be worked out.');
+  return t.slice(1).map(r => ({ ts: toSeconds(r[ti]), url: (r[ui] || '').trim(), cid: '' }));
+}
+
+function rowsFromText(text) {
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    let json;
+    try { json = JSON.parse(trimmed); } catch { throw new Error("That file looks damaged. Try downloading or exporting it again."); }
+    const rows = rowsFromJson(json);
+    if (rows) return rows;
+    throw new Error("This file doesn't contain browsing history. If it's from Google Takeout, make sure Chrome was selected.");
+  }
+  const rows = rowsFromCsv(text);
+  if (rows) return rows;
+  return null;
+}
 
 async function readFile(file) {
   progress(.05, 'Opening the file…');
-  let text = null;
-  if (/\.zip$/i.test(file.name) || file.type.includes('zip')) {
+  if (/-journal$|-wal$|-shm$/i.test(file.name)) {
+    throw new Error(`That's "${file.name}", a helper file. Pick the one named just "${file.name.replace(/-(journal|wal|shm)$/i, '')}".`);
+  }
+  if (!file.size) throw new Error('That file is empty. Close the browser completely, then pick its History file again.');
+  const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+
+  if (isSqlite(head)) return readSqlite(new Uint8Array(await file.arrayBuffer()));
+
+  if (isZip(head)) {
     if (!window.JSZip) throw new Error('Could not load the zip reader. Check your internet connection and try again.');
     const zip = await JSZip.loadAsync(file);
-    const entry = Object.values(zip.files).find(f => !f.dir && /(^|\/)(Browser)?History\.json$/i.test(f.name) && /chrome/i.test(f.name))
-      || Object.values(zip.files).find(f => !f.dir && /(Browser)?History\.json$/i.test(f.name));
-    if (!entry) throw new Error("This zip doesn't contain Chrome history. In Google Takeout, make sure Chrome is selected.");
-    progress(.15, 'Unpacking…');
-    text = await entry.async('string', m => progress(.15 + m.percent / 100 * .25));
-  } else {
-    text = await file.text();
+    const files = Object.values(zip.files).filter(f => !f.dir);
+    progress(.12, 'Unpacking…');
+    // 1. Google Takeout Chrome history
+    const takeout = files.find(f => /(^|\/)(Browser)?History\.json$/i.test(f.name) && /chrome/i.test(f.name))
+      || files.find(f => /(^|\/)(Browser)?History\.json$/i.test(f.name));
+    if (takeout) {
+      const text = await takeout.async('string', m => progress(.12 + m.percent / 100 * .25));
+      progress(.4, 'Reading your history…'); await nextFrame();
+      const rows = rowsFromText(text);
+      if (rows) return rows;
+    }
+    // 2. A browser's history database that was zipped up
+    const dbFile = files.find(f => /(^|\/)(History|places\.sqlite|History\.db)$/i.test(f.name));
+    if (dbFile) {
+      const bytes = await dbFile.async('uint8array', m => progress(.12 + m.percent / 100 * .1));
+      if (isSqlite(bytes)) return readSqlite(bytes);
+    }
+    // 3. Any JSON/CSV export inside
+    for (const f of files.filter(f => /\.(json|csv)$/i.test(f.name) && !/(^|\/)Takeout\//i.test(f.name))) {
+      try { const rows = rowsFromText(await f.async('string')); if (rows) return rows; } catch {}
+    }
+    if (files.some(f => /takeout/i.test(f.name))) {
+      throw new Error("This Google export has no Chrome history. That's normal if you use Opera GX, Edge, Brave or Firefox, or Chrome without sync. Pick your browser above and load its History file instead.");
+    }
+    throw new Error("This zip doesn't contain browsing history.");
   }
-  progress(.42, 'Reading your history…'); await nextFrame();
-  let json;
-  try { json = JSON.parse(text); } catch { throw new Error("That file isn't readable. Pick the .zip Google sent, or the History.json inside it."); }
-  const raw = json['Browser History'] || json.BrowserHistory || json.browser_history || (Array.isArray(json) ? json : null);
-  if (!raw || !raw.length) throw new Error('No browsing history found in this file.');
-  return raw;
+
+  const text = await file.text();
+  progress(.4, 'Reading your history…'); await nextFrame();
+  const rows = rowsFromText(text);
+  if (rows) return rows;
+  throw new Error("That file isn't browser history. Pick Google's .zip, or your browser's \"History\" file (see the steps above).");
 }
 
 async function buildSummary(raw) {
   const rows = [];
   for (const r of raw) {
-    const ts = Number(r.time_usec) / 1e6;
-    if (!ts || !r.url || !/^https?:/i.test(r.url)) continue;
-    if (/RELOAD/i.test(r.page_transition || '')) continue;
-    rows.push({ ts, url: r.url, cid: r.client_id || '' });
+    const ts = Number(r.ts);
+    if (!isFinite(ts) || ts < 946684800 || ts > Date.now() / 1000 + 86400) continue;   // ignore broken dates
+    if (!r.url || !/^https?:/i.test(r.url)) continue;
+    rows.push({ ts, url: r.url, cid: r.cid || '' });
   }
+  if (!rows.length) throw new Error('No websites found in this file. If the browser was just installed or its history was cleared, there may be nothing to show yet.');
   rows.sort((a, b) => a.cid < b.cid ? -1 : a.cid > b.cid ? 1 : a.ts - b.ts);
   progress(.5, `Sorting ${rows.length.toLocaleString()} pages…`); await nextFrame();
 
@@ -484,10 +641,10 @@ async function handleFile(file) {
   if (!file) return;
   show('loading'); progress(0);
   try {
-    const raw = await readFile(file);
-    const summary = await buildSummary(raw);
-    if (!summary.visits.length) throw new Error('No web pages found in this export.');
-    progress(.98, 'Saving on this phone…');
+    const rows = await readFile(file);
+    const summary = await buildSummary(rows);
+    if (!summary.visits.length) throw new Error('No websites found in this file.');
+    progress(.98, 'Saving on this device…');
     await idb.set('summary', summary);
     progress(1, 'Done');
     data = summary; cache.clear(); lastShownKey = null;
@@ -500,13 +657,10 @@ async function handleFile(file) {
 }
 $('#fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
 const pickFile = () => $('#fileInput').click();
-$('#loadBtn').onclick = pickFile;
-$('#takeoutBtn').addEventListener('click', () => { store.set('askedTakeout', String(Date.now())); $('#step1').classList.remove('active'); $('#step2').classList.add('active'); });
-if (store.get('askedTakeout')) { $('#step1').classList.remove('active'); $('#step2').classList.add('active'); }
-$('#updateBtn').onclick = () => { if (confirm('Load a newer Google export? It replaces the data now on this phone.')) pickFile(); };
+$('#updateBtn').onclick = () => { if (confirm('Load newer history? It replaces the data now on this device.')) pickFile(); };
 $('#update2').onclick = pickFile;
 $('#deleteBtn').onclick = async () => {
-  if (!confirm('Delete your browsing summary from this phone? You can load it again later from your Google export.')) return;
+  if (!confirm('Delete your browsing summary from this device? You can load it again later from your history file.')) return;
   await idb.del('summary'); data = null; show('welcome');
 };
 function show(which) { for (const id of ['welcome', 'loading', 'app']) $('#' + id).hidden = id !== which; }
@@ -707,7 +861,7 @@ function render(fresh, focusChange) {
       <span class="grow"><span class="n">${esc(p.key.replace(/^reddit r\//, '').replace(/^reddit /, '').replace(/^x @/, ''))}</span></span>
       <span class="val">${fmt(p.secs)}</span></li>`).join(''), anim);
 
-  setHTML($('#aboutData'), `Your Google export covers <b>${longDate(data.earliest)}</b> to <b>${longDate(data.latest)}</b>: ${data.visits.length.toLocaleString()} pages from ${data.devices} device${data.devices === 1 ? '' : 's'} with Chrome sync. It's stored only in this browser. To update it, request a new export from Google and load it here.`);
+  setHTML($('#aboutData'), `Your history covers <b>${longDate(data.earliest)}</b> to <b>${longDate(data.latest)}</b>: ${data.visits.length.toLocaleString()} pages${data.devices > 1 ? ` from ${data.devices} synced devices` : ''}. It's stored only in this browser. To update it, load a newer history file or Google export here.`);
 }
 
 // ---------- bar chart ----------
@@ -749,6 +903,78 @@ function bars(sel, rows, showLabel, stacked, animate) {
   };
   box.onmousemove = showTip; box.onclick = showTip; box.onmouseleave = () => tip.style.display = 'none';
 }
+
+// ---------- "which browser?" steps on the welcome screen ----------
+const ICON_OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>';
+const ICON_LOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>';
+const loadButton = label => `<button class="cta ghost" data-load>${ICON_LOAD}${label}</button>`;
+const pathBox = (path, note) => `<div class="path-box"><code>${path}</code><button class="copy" data-copy="${path}">Copy</button></div>${note ? `<div class="s-text" style="margin-top:6px">${note}</div>` : ''}`;
+const step = (n, title, body, active) => `<li class="${active ? 'active' : ''}"><span class="num">${n}</span><div style="flex:1;min-width:0"><div class="s-title">${title}</div>${body}</div></li>`;
+const computerOnly = name => `<li class="phone-note">On a phone? ${name}'s phone app can't export its history. Do this on the computer where you use ${name}.</li>`;
+
+// Steps for browsers that keep a "History" database file (all Chromium-based).
+function historyFileSteps({ name, page, pathWin, pathNote, closeNote }) {
+  return step(1, `Close ${name} completely`, `<div class="s-text">${closeNote || `Quit ${name} so its history is fully saved.`}</div>`, true) +
+    step(2, `Load your ${name} history`, `<div class="s-text">Tap below. In the window that opens, paste this into the address bar at the top and press <b>Enter</b>:</div>
+      ${pathBox(pathWin, pathNote)}
+      <div class="s-text" style="margin-top:8px">Then pick the file named <b>History</b> (no extension) and open it.</div>
+      ${loadButton(`Load my ${name} history`)}
+      <details class="s-text alt"><summary>On a Mac, or can't find it?</summary>Open <code>${page}</code> in ${name}. The <b>Profile</b> line shows the exact folder. Open that folder in the file window and pick <b>History</b>.</details>`, false) +
+    computerOnly(name);
+}
+
+const BROWSERS = {
+  chrome: () =>
+    step(1, 'Ask Google for your Chrome history', `<div class="s-text">Chrome is already selected. Scroll down, tap <b>Next step</b>, then <b>Create export</b>. Google emails you when it's ready (usually minutes, sometimes a few hours).</div>
+      <a class="cta primary" data-takeout href="https://takeout.google.com/settings/takeout/custom/chrome" target="_blank" rel="noopener noreferrer">${ICON_OUT}Get my data from Google</a>
+      <details class="s-text alt"><summary>On a computer? There's a faster way</summary>Close Chrome, tap <b>Load my data</b>, paste <code>%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default</code> into the file window's address bar, press Enter and pick <b>History</b>. It loads instantly, no email needed.</details>`, !store.get('askedTakeout')) +
+    step(2, 'Open the file here', `<div class="s-text">When Google's email arrives, download the file, come back to this page and tap below. Pick the <b>.zip</b> you downloaded (on iPhone it's in <b>Files → Downloads</b>).</div>${loadButton('Load my data')}`, !!store.get('askedTakeout')),
+  opera: () => historyFileSteps({
+    name: 'Opera GX', page: 'opera://about',
+    pathWin: '%APPDATA%\\Opera Software\\Opera GX Stable',
+    pathNote: 'Using regular Opera? Change <b>Opera GX Stable</b> to <b>Opera Stable</b>. If there’s no History file, open the <b>Default</b> folder first.',
+    closeNote: 'Quit Opera GX, including the icon by the clock (right-click it → <b>Exit</b>), so its history is fully saved.',
+  }),
+  edge: () => historyFileSteps({ name: 'Edge', page: 'edge://version', pathWin: '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default' }),
+  brave: () => historyFileSteps({ name: 'Brave', page: 'brave://version', pathWin: '%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\Default' }),
+  firefox: () =>
+    step(1, 'Find your Firefox profile', `<div class="s-text">In Firefox, open <code>about:support</code>. Next to <b>Profile Folder</b>, tap <b>Open Folder</b>.</div>`, true) +
+    step(2, 'Close Firefox, then load the file', `<div class="s-text">Quit Firefox completely, tap below, go to that same folder and pick <b>places.sqlite</b>.</div>${loadButton('Load my Firefox history')}`, false) +
+    computerOnly('Firefox'),
+  other: () =>
+    step(1, 'Find your browser’s history file', `<div class="s-text">Most browsers (Vivaldi, Arc, Yandex and others built on Chromium) keep a file named <b>History</b>. Open the browser’s <b>about</b> or <b>version</b> page (for example <code>vivaldi://about</code>) and look for the <b>Profile</b> folder.</div>`, true) +
+    step(2, 'Close the browser, then load the file', `<div class="s-text">Quit the browser, tap below and pick <b>History</b> from that folder. Exports from history-export extensions (.json or .csv) work too.</div>${loadButton('Load my history')}`, false),
+};
+
+function guessBrowser() {
+  const ua = navigator.userAgent;
+  if (/OPR\/|Opera|OPX\//.test(ua)) return 'opera';
+  if (/Edg\//.test(ua)) return 'edge';
+  if (navigator.brave) return 'brave';
+  if (/Firefox\//.test(ua)) return 'firefox';
+  return 'chrome';
+}
+let browserChoice = store.get('browser') || guessBrowser();
+function renderSteps() {
+  if (!BROWSERS[browserChoice]) browserChoice = 'chrome';
+  $('#stepsBox').innerHTML = BROWSERS[browserChoice]();
+  document.querySelectorAll('#browserPick button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.b === browserChoice)));
+}
+$('#browserPick').addEventListener('click', e => {
+  const b = e.target.closest('button[data-b]'); if (!b) return;
+  browserChoice = b.dataset.b; store.set('browser', browserChoice); $('#welcomeErr').textContent = ''; renderSteps();
+});
+$('#stepsBox').addEventListener('click', async e => {
+  if (e.target.closest('[data-load]')) return pickFile();
+  if (e.target.closest('[data-takeout]')) { store.set('askedTakeout', String(Date.now())); setTimeout(renderSteps, 300); return; }
+  const c = e.target.closest('[data-copy]');
+  if (c) {
+    try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent = 'Copied'; }
+    catch { c.textContent = 'Select & copy'; }
+    setTimeout(() => { c.textContent = 'Copy'; }, 1600);
+  }
+});
+renderSteps();
 
 // ---------- installable app (offline copy of the page; never touches your data) ----------
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
