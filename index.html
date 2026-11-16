@@ -218,6 +218,22 @@
   details.alt > summary { font-size: 13px; color: var(--accent-2); }
   details.alt[open] > summary { margin-bottom: 4px; }
   .steps2 li.phone-note { display: block; background: none; border: 0; padding: 0 4px; font-size: 12.5px; color: var(--ink-3); }
+
+  /* share card */
+  .share-cta { display: flex; align-items: center; gap: 14px; width: 100%; margin-top: 14px; padding: 16px 18px; border-radius: 24px; color: var(--ink); cursor: pointer; text-align: left; }
+  .share-cta:active { transform: scale(.98); }
+  .share-ic { width: 44px; height: 44px; border-radius: 14px; flex: none; display: grid; place-items: center; color: #062033;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(70,150,255,.35); }
+  .share-ic svg { width: 21px; height: 21px; }
+  .share-t { display: block; font-weight: 600; }
+  .share-s { display: block; font-size: 13px; color: var(--ink-2); }
+  .share-top { display: flex; align-items: center; justify-content: space-between; }
+  .share-head { font-weight: 600; }
+  .share-stage { display: flex; justify-content: center; margin-top: 12px; }
+  #shareCanvas { width: min(100%, calc((100svh - 300px) * 9 / 16)); min-width: 220px; height: auto; aspect-ratio: 9 / 16; border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.55); }
+  .share-controls { margin-top: 14px; }
+  .share-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .share-btns .cta { margin-top: 0; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 </head>
@@ -281,6 +297,12 @@
 
     <div class="tiles" id="tiles"></div>
 
+    <button class="glass share-cta" id="shareOpen">
+      <span class="share-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></span>
+      <span style="flex:1;text-align:left"><span class="share-t">Share your summary</span><span class="share-s">A story-sized card. No sites or searches, just the big picture.</span></span>
+      <span style="color:var(--ink-3);font-size:20px">›</span>
+    </button>
+
     <div class="glass card">
       <div class="label" id="trendTitle">Each day</div>
       <div class="note" id="trendNote"></div>
@@ -319,6 +341,27 @@
         <button class="cta ghost danger" id="deleteBtn">Delete my data from this device</button>
         <div class="fine">Times are estimates, based on the gap between pages. Private and incognito tabs are never saved to history, so they aren't included. <a href="privacy.html">Privacy</a></div>
       </details>
+    </div>
+  </section>
+
+  <!-- 4. Share card -->
+  <section id="share" hidden>
+    <div class="share-top">
+      <button class="round" id="shareClose" aria-label="Back to my data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <div class="share-head">Share your summary</div>
+      <span style="width:46px"></span>
+    </div>
+    <div class="share-stage"><canvas id="shareCanvas" width="1080" height="1920" aria-label="Your shareable summary card"></canvas></div>
+    <div class="share-controls">
+      <div class="browser-pick" id="shareRange" style="justify-content:center">
+        <button data-i="0">Day</button><button data-i="1">Week</button><button data-i="2">Month</button><button data-i="3">3 months</button>
+      </div>
+      <div class="browser-pick" style="justify-content:center;margin-top:8px"><button id="shareTime">Show my daily time</button></div>
+      <div class="share-btns">
+        <button class="cta primary" id="shareSend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
+        <button class="cta ghost" id="shareSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Save image</button>
+      </div>
+      <div class="fine" style="text-align:center">Only what you see on the card is shared. Or just take a screenshot.</div>
     </div>
   </section>
 </main>
@@ -663,7 +706,7 @@ $('#deleteBtn').onclick = async () => {
   if (!confirm('Delete your browsing summary from this device? You can load it again later from your history file.')) return;
   await idb.del('summary'); data = null; show('welcome');
 };
-function show(which) { for (const id of ['welcome', 'loading', 'app']) $('#' + id).hidden = id !== which; }
+function show(which) { for (const id of ['welcome', 'loading', 'app', 'share']) $('#' + id).hidden = id !== which; }
 
 // ---------- aggregation (ranges end on the last day in the export) ----------
 const RANGES = [{ d: 1, name: 'Day' }, { d: 7, name: 'Week' }, { d: 30, name: 'Month' }, { d: 90, name: '3 months' }];
@@ -979,6 +1022,156 @@ renderSteps();
 // ---------- installable app (offline copy of the page; never touches your data) ----------
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+// ---------- share card: a story-sized image with a brief, safe summary ----------
+// Shows only totals, percentages, peak hour and a "vibe" label. Never site names, searches or pages.
+const SHARE_W = 1080, SHARE_H = 1920;
+const CARD_COLORS = { social: '#3987e5', video: '#199e70', games: '#c98500', shop: '#9085e9', other: '#6a6b76' };
+const shareState = { ri: null, showTime: store.get('shareShowTime') !== '0' };
+const siteUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
+let qrLibPromise = null;
+function loadQr() {
+  return qrLibPromise ||= new Promise((res, rej) => {
+    if (window.qrcode) return res(window.qrcode);
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+    s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+    s.onload = () => res(window.qrcode); s.onerror = () => { qrLibPromise = null; rej(new Error('qr')); };
+    document.head.appendChild(s);
+  });
+}
+const logoImg = new Image(); logoImg.src = 'icons/icon-192.png';
+
+function persona(d, peakH, topCat) {
+  if (peakH >= 22 || peakH <= 4) return 'Night owl';
+  if (peakH >= 5 && peakH <= 9) return 'Early bird';
+  return { social: 'Social butterfly', video: 'Binge watcher', games: 'Gamer at heart', shop: 'Window shopper' }[topCat] || 'Curious explorer';
+}
+function shareSummary(ri) {
+  const days = RANGES[ri].d, d = aggregate(days);
+  const total = CAT_KEYS.reduce((a, k) => a + d.totals.secs[k], 0);
+  const parts = CAT_KEYS.map(k => ({ k, v: d.totals.secs[k] })).filter(p => p.v > 0).sort((a, b) => (a.k === 'other') - (b.k === 'other') || b.v - a.v);
+  const named = parts.filter(p => p.k !== 'other');
+  const topCat = (named[0] || parts[0] || { k: 'other' }).k;
+  const hourTotals = d.hourly.map(h => CAT_KEYS.reduce((a, k) => a + h.secs[k], 0));
+  const peakH = hourTotals.indexOf(Math.max(...hourTotals));
+  const end = new Date(data.latest * 1000);
+  const start = new Date(Math.max(new Date(end.getFullYear(), end.getMonth(), end.getDate() - (days - 1)).getTime(), dayStart(data.earliest) * 1000));
+  const f = dt => dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  return {
+    days, total, perDay: total / days, parts, topCat, peakH,
+    vibe: persona(d, peakH, topCat),
+    title: { 1: 'My day online', 7: 'My week online', 30: 'My month online', 90: 'My 3 months online' }[days],
+    dates: days === 1 ? end.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }) : `${f(start)} – ${f(end)}`,
+  };
+}
+function rrect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function fitFont(ctx, text, weight, size, maxW) { do { ctx.font = `${weight} ${size}px Inter, -apple-system, "Segoe UI", sans-serif`; } while (ctx.measureText(text).width > maxW && (size -= 4) > 20); return size; }
+const hourWord = h => new Date(2000, 0, 1, h).toLocaleTimeString([], { hour: 'numeric' }).replace(':00', '').toLowerCase();
+
+async function drawShareCard(canvas, s) {
+  try { await Promise.all(['400', '500', '600', '700'].map(w => document.fonts.load(`${w} 40px Inter`))); } catch {}
+  const ctx = canvas.getContext('2d'), W = SHARE_W, H = SHARE_H, F = 'Inter, -apple-system, "Segoe UI", sans-serif';
+  canvas.width = W; canvas.height = H;
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#171a2e'); bg.addColorStop(.55, '#0c0d17'); bg.addColorStop(1, '#07070d');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  const glow = ctx.createRadialGradient(W / 2, 80, 0, W / 2, 80, 900); glow.addColorStop(0, 'rgba(91,75,214,.45)'); glow.addColorStop(1, 'rgba(91,75,214,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+  // header
+  if (logoImg.complete && logoImg.naturalWidth) { ctx.save(); rrect(ctx, 60, 64, 72, 72, 18); ctx.clip(); ctx.drawImage(logoImg, 60, 64, 72, 72); ctx.restore(); }
+  ctx.fillStyle = '#f2f3f7'; ctx.font = `600 44px ${F}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText('Tabwise', 150, 101);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#8b8d9c'; ctx.font = `500 32px ${F}`; ctx.fillText(s.dates, W - 60, 101);
+  // title
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#ffffff';
+  fitFont(ctx, s.title, 700, 92, W - 120); ctx.fillText(s.title, 60, 270);
+  // ring
+  const cx = W / 2, cy = 640, r = 235, lw = 62, total = s.parts.reduce((a, p) => a + p.v, 0) || 1;
+  ctx.lineWidth = lw; ctx.lineCap = 'butt'; ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  const gap = s.parts.length > 1 ? 0.075 : 0; let a = -Math.PI / 2;
+  ctx.lineCap = 'round';
+  for (const p of s.parts) {
+    const sweep = p.v / total * Math.PI * 2;
+    if (sweep - gap > 0.02) { ctx.strokeStyle = CARD_COLORS[p.k]; ctx.beginPath(); ctx.arc(cx, cy, r, a + gap / 2 + .06, a + sweep - gap / 2 - .06); ctx.stroke(); }
+    a += sweep;
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const top = s.parts.find(p => p.k === s.topCat);
+  const bigText = shareState.showTime ? fmt(s.perDay) : `${pct(top?.v || 0, total)}%`;
+  const subText = shareState.showTime ? (s.days === 1 ? 'online today' : 'a day, on average') : `on ${CAT[s.topCat].long.toLowerCase()}`;
+  ctx.fillStyle = '#ffffff'; fitFont(ctx, bigText, 700, 128, 2 * (r - lw) - 30); ctx.fillText(bigText, cx, cy + 30);
+  ctx.fillStyle = '#a9abb8'; ctx.font = `500 38px ${F}`; ctx.fillText(subText, cx, cy + 92);
+  // legend (percentages only)
+  let y = 990;
+  ctx.textBaseline = 'middle';
+  for (const p of s.parts.slice(0, 4)) {
+    ctx.fillStyle = CARD_COLORS[p.k]; ctx.beginPath(); ctx.arc(210, y, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#e8e9ef'; ctx.font = `500 42px ${F}`; ctx.fillText(CAT[p.k].long, 250, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; ctx.font = `700 42px ${F}`; ctx.fillText(`${pct(p.v, total)}%`, W - 180, y);
+    y += 72;
+  }
+  // two stat pills
+  const pill = (x, label, value) => {
+    ctx.fillStyle = 'rgba(255,255,255,.06)'; rrect(ctx, x, 1300, 470, 150, 38); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.09)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#8b8d9c'; ctx.font = `500 30px ${F}`; ctx.fillText(label, x + 36, 1348);
+    ctx.fillStyle = '#ffffff'; fitFont(ctx, value, 700, 50, 400); ctx.fillText(value, x + 36, 1404);
+  };
+  pill(60, 'Peak hour', hourWord(s.peakH)); pill(550, 'My vibe', s.vibe);
+  // "Add yours"-style invite card
+  const cy0 = 1500, ch = 340;
+  ctx.fillStyle = '#ffffff'; rrect(ctx, 60, cy0, W - 120, ch, 44); ctx.fill();
+  const url = siteUrl(), short = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  let qrSize = 0;
+  try {
+    const qrcode = await loadQr(); const q = qrcode(0, 'M'); q.addData(url); q.make();
+    const n = q.getModuleCount(); qrSize = 250; const cell = qrSize / n, qx = W - 60 - 45 - qrSize, qy = cy0 + (ch - qrSize) / 2;
+    ctx.fillStyle = '#0b0c14';
+    for (let rr = 0; rr < n; rr++) for (let cc = 0; cc < n; cc++) if (q.isDark(rr, cc)) ctx.fillRect(qx + cc * cell, qy + rr * cell, Math.ceil(cell), Math.ceil(cell));
+  } catch { qrSize = 0; }
+  const textW = W - 120 - 90 - (qrSize ? qrSize + 40 : 0);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#111218'; fitFont(ctx, 'Where does your', 700, 54, textW); ctx.fillText('Where does your', 105, cy0 + 92);
+  fitFont(ctx, 'screen time go?', 700, 54, textW); ctx.fillText('screen time go?', 105, cy0 + 156);
+  // "button"
+  ctx.fillStyle = '#2f6ff0'; rrect(ctx, 105, cy0 + 196, Math.min(textW, 330), 74, 37); ctx.fill();
+  ctx.fillStyle = '#ffffff'; ctx.font = `700 36px ${F}`; ctx.textBaseline = 'middle'; ctx.fillText('↗  Find yours', 140, cy0 + 234);
+  ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#6b6d78'; fitFont(ctx, short, 500, 28, textW); ctx.fillText(short, 105, cy0 + 312);
+  // footer note
+  ctx.textAlign = 'center'; ctx.fillStyle = '#5d5f6c'; ctx.font = `500 26px ${F}`;
+  ctx.fillText('No sites or searches shown. Made privately on my device.', W / 2, 1884);
+}
+
+async function renderShare() {
+  const s = shareSummary(shareState.ri);
+  document.querySelectorAll('#shareRange button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === shareState.ri)));
+  $('#shareTime').setAttribute('aria-pressed', String(shareState.showTime));
+  await drawShareCard($('#shareCanvas'), s);
+}
+async function openShare() {
+  shareState.ri = state.ri;
+  show('share'); window.scrollTo(0, 0);
+  await renderShare();
+}
+function shareBlob() { return new Promise(res => $('#shareCanvas').toBlob(res, 'image/png')); }
+$('#shareOpen').onclick = openShare;
+$('#shareClose').onclick = () => { show('app'); render(false); };
+$('#shareRange').onclick = e => { const b = e.target.closest('button[data-i]'); if (!b) return; shareState.ri = +b.dataset.i; renderShare(); };
+$('#shareTime').onclick = () => { shareState.showTime = !shareState.showTime; store.set('shareShowTime', shareState.showTime ? '1' : '0'); renderShare(); };
+$('#shareSend').onclick = async () => {
+  const blob = await shareBlob(); if (!blob) return;
+  const file = new File([blob], 'tabwise-summary.png', { type: 'image/png' });
+  const text = `Where does your screen time go? Find yours: ${siteUrl()}`;
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], text }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  downloadBlob(blob);
+};
+$('#shareSave').onclick = async () => { const blob = await shareBlob(); if (blob) downloadBlob(blob); };
+function downloadBlob(blob) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tabwise-summary.png';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
 // ---------- start ----------
