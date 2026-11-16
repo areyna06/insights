@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c14">
+<meta name="description" content="Tabwise privacy: your browsing data stays on your device and is never uploaded.">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Tabwise Privacy</title>
+<style>
+  :root { color-scheme: dark; --bg: #07070d; --ink: #f2f3f7; --ink-2: #a9abb8; --ink-3: #6d6f7d; --edge: rgba(255,255,255,.09); --accent-2: #5fd0ff; --good: #34c46a; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+  body { margin: 0; color: var(--ink); background: var(--bg);
+    font: 15px/1.6 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; letter-spacing: -0.011em; -webkit-font-smoothing: antialiased; }
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(900px 500px at 50% -120px, rgba(76,60,190,.32), transparent 70%); }
+  main { max-width: 620px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom)); }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: var(--ink); text-decoration: none; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  .back { color: var(--ink-2); text-decoration: none; font-size: 14px; border: 1px solid var(--edge); border-radius: 99px; padding: 7px 14px; }
+  h1 { font-size: 32px; font-weight: 700; letter-spacing: -.035em; line-height: 1.1; margin: 34px 0 6px; }
+  .updated { color: var(--ink-3); font-size: 13px; }
+  .summary { margin-top: 22px; padding: 18px 20px; border-radius: 22px; border: 1px solid var(--edge);
+    background: linear-gradient(180deg, rgba(38,40,52,.72), rgba(18,19,26,.82)); }
+  .summary li { margin: 6px 0; }
+  .summary ul { margin: 0; padding-left: 0; list-style: none; }
+  .summary li::before { content: "✓"; color: var(--good); font-weight: 700; margin-right: 10px; }
+  h2 { font-size: 18px; letter-spacing: -.02em; margin: 30px 0 6px; }
+  p, li { color: var(--ink-2); }
+  b, strong { color: var(--ink); font-weight: 600; }
+  a { color: var(--accent-2); }
+  ul.plain { padding-left: 20px; }
+  footer { margin-top: 40px; color: var(--ink-3); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="brand" href="./"><img src="icons/icon-192.png" alt="">Tabwise</a>
+    <a class="back" href="./">Open Tabwise</a>
+  </div>
+
+  <h1>Privacy</h1>
+  <div class="updated">Last updated November 16, 2026</div>
+
+  <div class="summary">
+    <ul>
+      <li><b>Your browsing history never leaves your device.</b></li>
+      <li>No accounts, no sign-up, no tracking or analytics.</li>
+      <li>Nothing is sold, shared, or sent to us. We never see your data.</li>
+      <li>Delete it from your device with one tap, any time.</li>
+    </ul>
+  </div>
+
+  <h2>What Tabwise does with your data</h2>
+  <p>When you load your Google export, Tabwise opens the file <b>inside your browser</b> on your own device. It reads your Chrome history there and works out the time spent per site and category. The file and the results are never uploaded to any server. Not to us, and not to anyone else.</p>
+
+  <h2>What's stored, and where</h2>
+  <p>To save you from loading the file every visit, Tabwise keeps a <b>summary</b> (sites, times and categories) in your browser's own storage on that device. It stays there until you delete it. Other websites can't read it, and it isn't synced anywhere.</p>
+  <p>To remove it: open Tabwise, go to <b>About your data</b>, and tap <b>Delete my data from this phone</b>. Clearing your browser's website data also removes it.</p>
+  <p>Tabwise also remembers a couple of display settings on your device (like which time range you last looked at). These contain no browsing data.</p>
+
+  <h2>Your Google export</h2>
+  <p>The "Get my data from Google" button opens <b>Google Takeout</b>, Google's own service for downloading your data. Requesting the export happens entirely between you and Google, under <a href="https://policies.google.com/privacy" rel="noopener">Google's privacy policy</a>. Tabwise never sees your Google account or password.</p>
+
+  <h2>Other services the page uses</h2>
+  <p>Like most websites, loading Tabwise means your browser contacts a few services. They receive the usual technical details any website gets (such as your IP address and browser type), but <b>never your browsing data</b>:</p>
+  <ul class="plain">
+    <li><b>GitHub Pages</b> hosts the website itself. See <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub's privacy statement</a>.</li>
+    <li><b>Google Fonts</b> provides the Inter typeface. See <a href="https://developers.google.com/fonts/faq/privacy" rel="noopener">Google Fonts privacy</a>.</li>
+    <li><b>cdnjs (Cloudflare)</b> provides the small tool that opens .zip files. See <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener">Cloudflare's privacy policy</a>.</li>
+  </ul>
+  <p>Tabwise doesn't use cookies, ads, analytics, or tracking pixels.</p>
+
+  <h2>Installing as an app</h2>
+  <p>If you add Tabwise to your home screen, your device saves a copy of the page so it opens quickly and works offline. That copy is the app itself, not your data.</p>
+
+  <h2>Children</h2>
+  <p>Tabwise doesn't collect personal information from anyone, including children.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the new version will be posted on this page with a new date.</p>
+
+  <footer>Tabwise is an independent project and isn't affiliated with Google or Chrome.</footer>
+</main>
+</body>
+</html>
